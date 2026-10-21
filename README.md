@@ -1,63 +1,211 @@
-# Algorithm Visualizer (Python + Tkinter)
+<div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat-square&logo=python)
-![Tkinter](https://img.shields.io/badge/GUI-Tkinter-purple?style=flat-square)
-![Status](https://img.shields.io/badge/Status-Work_In_Progress-orange?style=flat-square)
+# ⚡ ALGO STUDIO
 
-A lightweight, interactive tool I threw together to visualize how sorting and searching algorithms actually work under the hood. I built this because reading about O(n²) is one thing, but actually *watching* the bars move makes it click in the brain and easy to remember.
+### Algorithms have moves. Now you can see them. 🪄
 
-It’s currently a mini-project/prototype, but it handles the basics!
+**A tiny Python playground with a big personality.**<br>
+Turn “wait, how does that work?” into “ohhh, I get it.”
 
-## 📸 Preview
+<img alt="Python 3.10 or newer" src="https://img.shields.io/badge/Python-3.10%2B-56e0bf?style=for-the-badge&logo=python&logoColor=0a101c" />
+<img alt="13 algorithms" src="https://img.shields.io/badge/13-ALGORITHMS-b09aff?style=for-the-badge" />
+<img alt="No pip dependencies" src="https://img.shields.io/badge/PIP_INSTALLS-ZERO-f5c773?style=for-the-badge" />
 
-*(screenshot or GIF here to add)*
+[🎮 Press play](#press-play) · [🧠 Meet the algorithms](#the-lineup) · [🎛️ Take control](#the-controls) · [🧪 Try a challenge](#challenge-mode)
 
-## 🚀 Features
+</div>
 
-* **Zero Dependencies:** Runs entirely on the Python standard library (`tkinter`, `random`, `time`). No `pip install` needed.
-* **Real-time Visualization:** Visualizes the comparison and swapping steps with a delay so you can follow the logic.
-* **Color Coded:**
-    * 🟨 **Yellow:** Default elements.
-    * 🟥 **Red:** Elements currently being compared or swapped.
-    * 🟩 **Green:** Element found (Linear Search).
+![Live Algo Studio demo showing animated Comb Sort, Shell Sort, and Interpolation Search](docs/demo.gif)
 
-### Implemented Algorithms
-1.  **Bubble Sort:** The classic sinking sort.
-2.  **Selection Sort:** Scans for the minimum and swaps it to the front.
-3.  **Linear Search:** Iterates through the list to find a specific number.
+<p align="center"><sub>🎬 Actual app footage. Comb Sort → Shell Sort → Interpolation Search. Yes, those bars really do that.</sub></p>
 
-## 🛠️ How to Run
+---
 
-Since there are no external libraries, you just need Python installed.
+## ✨ A little less textbook. A lot more “aha!”
 
-1.  Clone the repo:
-    ```bash
-    git clone [https://github.com/yourusername/algo-visualizer.git](https://github.com/yourusername/algo-visualizer.git)
-    ```
-2.  Navigate to the directory:
-    ```bash
-    cd algo-visualizer
-    ```
-3.  Run the script:
-    ```bash
-    python main.py
-    ```
+| 🕺 Watch the moves | 🔍 Catch every detail | 🎨 Make it yours |
+| :--- | :--- | :--- |
+| Bars glide through swaps on curved paths. Writes ease into place. Active values glow. | Live comparisons, array writes, highlighted pseudocode, and a description of every step. | Custom arrays, four data presets, adjustable speed, and your own search target. |
+| Finish a sort and enjoy the green sweep + sparkle moment. ✨ | Pause, step forward, hover over a bar, and inspect exactly what's happening. | Negatives? Zeros? Duplicates? Bring them. Reduced motion is one click away. |
 
-## Known Bugs
+> 💡 **The best part:** you can stop an algorithm halfway through without breaking anything. Your original input comes right back. No restart ritual required.
 
-* **Hardcoded Search:** The "Linear Search" button currently only looks for the number `50`. If `50` wasn't generated in the random array, it just searches to the end and does nothing.
-* **No "Stop" Button:** Once you start a sort, you have to let it finish. If you try to close the window mid-sort, it might throw an error in the console.
-* **Visual Artifacts:** If you click a sort button *while* another sort is already running, the canvas `delete("all")` fights with the previous loop, causing the bars to flicker or disappear.
-* **No Promts:** Right now when the Algorithm finishes it doesnt give a "Done" or "Found!" Message/Promt.
+<a id="press-play"></a>
 
-## 📝 To-Do List
+## 🎮 Three commands. You're in.
 
-This is a WIP, so there is a lot I want to add:
+You'll need **Python 3.10+**, **Tkinter**, and a graphical desktop. No pip shopping list.
 
-- [ ] **Dynamic Search:** Add an Input Box so the user can type in *which* number they want to find.
-- [ ] **Reset Button:** Currently, you have to restart the app to generate a new random array.
-- [ ] **Add Merge Sort & Quick Sort:** These are harder to visualize recursively, but working on it.
-- [ ] **Speed Control:** Add a slider to adjust the `delay` variable (speed up or slow down execution).
-- [ ] **Better Colors:** Make the bars turn Green as they reach their final sorted position, Aswell as make the buttons more Visually appealing.
+```bash
+git clone https://github.com/Rad-Sharkboy/Algorithm-Visualizer.git
+cd Algorithm-Visualizer
+python3 PROJECT.py
+```
 
-This is just a side project to learn Tkinter and Algorithms, but if you know how to fix the threading issue or want to add a new algorithm, feel free to fork it and open a Pull Request!
+On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Run `python3 -m tkinter`—a little demo window means you're good to go.
+
+**Pick an algorithm → choose your data → hit Run → follow the glow.**
+
+<a id="the-lineup"></a>
+
+## 🧠 Meet the lineup
+
+### 🏁 The sorting crew
+
+| Algorithm | Its whole personality |
+| :--- | :--- |
+| 🫧 **Bubble Sort** | One neighbor at a time. Patiently. Very patiently. |
+| 🎯 **Selection Sort** | Find the smallest. Give it the front seat. |
+| 🃏 **Insertion Sort** | Organize the array like a hand of cards. |
+| 🐚 **Shell Sort** | Start with giant steps, then mind the gaps. |
+| 🪮 **Comb Sort** | Detangle the array with a shrinking comb. |
+| 🧩 **Merge Sort** | Tiny sorted teams join forces until everyone's in order. |
+| ⚡ **Quick Sort** | Pick a pivot. Everyone chooses a side. Repeat. |
+| 🏔️ **Heap Sort** | The biggest value keeps getting promoted to the end. |
+| 🧮 **Counting Sort** | Keep a tally, then rebuild the lineup. |
+| 📬 **Radix Sort** | Sort digits into buckets, one place at a time. |
+
+### 🕵️ The search squad
+
+| Algorithm | How it finds the suspect |
+| :--- | :--- |
+| 🚶 **Linear Search** | Knock on every door until the target answers. |
+| ✂️ **Binary Search** | Rule out half the street with every decision. |
+| 📍 **Interpolation Search** | Estimate the address from the values at either end. |
+
+> 📌 **Search rules:** all three return the **first matching index**, starting at zero. Binary and Interpolation Search sort a copy first, so their result indices refer to that sorted copy. The app tells you when it does this. Reset restores your original order.
+
+<details>
+<summary><strong>🤓 Open the nerd drawer: complexity, gap sequences, and the fine print</strong></summary>
+
+<br>
+
+| Algorithm | Average time | Worst time | Extra space |
+| :--- | :---: | :---: | :---: |
+| Bubble Sort | O(n²) | O(n²) | O(1) |
+| Selection Sort | O(n²) | O(n²) | O(1) |
+| Insertion Sort | O(n²) | O(n²) | O(1) |
+| Shell Sort | Gap-dependent | O(n²) | O(1) |
+| Comb Sort | Gap-dependent | O(n²) | O(1) |
+| Merge Sort | O(n log n) | O(n log n) | O(n) |
+| Quick Sort | O(n log n) | O(n²) | O(n) |
+| Heap Sort | O(n log n) | O(n log n) | O(1) |
+| Counting Sort | O(n + k) | O(n + k) | O(k) |
+| Radix Sort | O(d · n) | O(d · n) | O(n) |
+| Linear Search | O(n) | O(n) | O(1) |
+| Binary Search | O(log n) | O(log n) | O(1) |
+| Interpolation Search | O(log log n)* | O(n) | O(1) |
+
+- **n** = number of values, **k** = integer range, **d** = base-10 digit count.
+- **Shell** uses the original halving gaps: `n // 2, …, 1`. **Comb** shrinks its gap by 1.3 and finishes only after a gap-1 pass makes no swaps.
+- **Quick** uses the final value as pivot and an explicit stack. **Merge** joins runs iteratively.
+- **Counting** and **Radix** support negative integers too.
+- **Interpolation's average** assumes uniformly distributed, distinct keys. Skewed data and finding the first duplicate can take linear time. Equal endpoints are handled without dividing by zero.
+- Costs above describe the algorithms. Copying visual frames, storing the original input, and drawing the chart add overhead. Sorting a search input is preparation, excluded from search comparison/write counts.
+
+</details>
+
+<a id="the-controls"></a>
+
+## 🎛️ You're the director
+
+| Control | What happens |
+| :--- | :--- |
+| ▶️ **Run / Pause / Resume** | Let it move. Freeze the action. Keep going. |
+| 👣 **Step** | Inspect one exact algorithm snapshot at a time. |
+| 🛑 **Stop** | Cancel the run and rescue your original input. |
+| ↩️ **Reset** | Same data, fresh counters, clean slate. |
+| 🔁 **Replay** | Give the original array another round. |
+| 🎲 **Generate** | Random, nearly sorted, reversed, or just a few unique values. |
+| ✍️ **Apply** | Use your own comma- or space-separated integers. |
+| 🏎️ **Animation speed** | Change the pace—even during a run. |
+| 🌙 **Reduced motion** | Keep the learning; skip the decorative movement. |
+| 📖 **Algorithm guide** | Open the explanation, pseudocode, and complexity. |
+
+**Input playground:** generated arrays have **8–64 values**. Custom arrays accept **1–64 integers from −999 to 999**. Hover over any bar for its index and exact value.
+
+<details>
+<summary><strong>⌨️ Keyboard cheat sheet — mouse optional</strong></summary>
+
+<br>
+
+| Key | Action |
+| :---: | :--- |
+| <kbd>Space</kbd> | Run / Pause / Resume |
+| <kbd>→</kbd> | Next step |
+| <kbd>Esc</kbd> | Stop |
+| <kbd>Ctrl</kbd> + <kbd>R</kbd> | Reset |
+| <kbd>Enter</kbd> in **Your Data** | Apply the array |
+| <kbd>Enter</kbd> in **Target** | Run the search |
+
+Typing and cursor movement still work normally in input fields. Focused buttons keep their standard Space activation.
+
+</details>
+
+<details>
+<summary><strong>🌈 Decode the glow & the numbers</strong></summary>
+
+<br>
+
+| Color | Meaning |
+| :--- | :--- |
+| 🩵 Teal | Unvisited |
+| 💜 Purple | Being compared or written |
+| 💛 Amber | Pivot or search boundary |
+| 💚 Green | Settled value or search match |
+| 🩶 Muted gray | Eliminated search position |
+
+Every step also has a text description. Found it? Missed it? Finished sorting? You'll get an explicit message.
+
+- **Comparisons:** value comparisons made by the algorithm.
+- **Array writes:** assignments to the main array; a swap counts as two. Auxiliary buffers and buckets are excluded.
+- **Visual steps:** displayed algorithm snapshots, including explanation and completion frames. Animation in-between frames do not inflate this count.
+- **Active time:** animation time excluding pauses. This is a learning tool, not a stopwatch benchmark.
+
+</details>
+
+<a id="challenge-mode"></a>
+
+## 🧪 Tiny challenges. Big brain energy.
+
+| Mission | Try this |
+| :--- | :--- |
+| 🪮 **The long-distance swap** | Paste `76, 21, 60, 12, 91, 43, 9, 68`, choose **Comb Sort**, and watch distant bars trade places. |
+| 🐚 **Mind the gap** | Replay that same input with **Shell Sort**. Spot the moment the gap becomes 1. |
+| 👯 **The duplicate detective** | Paste `9, -4, 9, 0, -4, 12`, search for `-4`, and compare Linear with Interpolation. Why are the indices different? |
+| 🫧 **Bubble's easy day** | Generate a nearly sorted array. Compare Bubble's counts with a reversed input of the same size. |
+| 🧊 **Freeze frame** | Pause a merge, press Step, and explain the next write before it happens. |
+
+<details>
+<summary><strong>🛠️ Peek under the hood</strong></summary>
+
+<br>
+
+```text
+Algo Studio
+├── PROJECT.py          🎛️ Interface + animation controller
+├── algorithms.py       🧠 13 incremental algorithms
+├── motion.py           🕺 Easing, colors + swap trajectories
+├── datasets.py         🎲 Presets + input validation
+├── theme.py            🎨 Palette, fonts + widget styling
+├── docs/               🎬 The actual app demo
+└── tools/record_demo.py 📹 Demo recorder
+```
+
+Tk's event loop keeps animations responsive without worker threads or blocking sleeps. Changing data, switching algorithms, resetting, or closing the window cancels pending callbacks. Stop restores the original values because shifting and merging can temporarily overwrite array positions.
+
+Pausing settles the current visual transition. Single-step shows an exact snapshot. Very fast playback skips transitions to keep up; reduced motion disables transitions and completion effects entirely.
+
+The layout supports windows from **1000 × 740**. On shorter windows, inline notes tuck away; **Algorithm guide** stays available. Importing the modules does not launch the app.
+
+</details>
+
+---
+
+<div align="center">
+
+### 💭 Read the idea. Predict the next move. Press play.
+
+**Made for the moment when the algorithm finally clicks.** ✨
+
+</div>
