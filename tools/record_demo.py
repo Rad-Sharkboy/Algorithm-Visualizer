@@ -27,6 +27,8 @@ def record(output):
         log = Path(temporary) / "ffmpeg.log"
         root = tk.Tk()
         app = Visualizer(root)
+        app.theme_var.set("Dark")
+        app._change_theme()
         root.geometry(f"{min(1280, root.winfo_screenwidth())}x"
                       f"{min(860, root.winfo_screenheight())}+0+0")
         app._select_algorithm("Comb Sort")
@@ -49,15 +51,17 @@ def record(output):
             root.quit()
 
         stages = [
-            ("Shell Sort", [91, 12, 68, 21, 76, 9, 60, 43], 45),
-            ("Interpolation Search", [-30, 20, 15, 90, 0, -15, 20, 60, -10, 30, 75, -5], 25),
+            ("Shell Sort", [91, 12, 68, 21, 76, 9, 60, 43], 45, "Light"),
+            ("Interpolation Search", [-30, 20, 15, 90, 0, -15, 20, 60, -10, 30, 75, -5], 25, "Dark"),
         ]
 
         def next_stage():
             if not stages:
                 finish()
                 return
-            name, values, speed = stages.pop(0)
+            name, values, speed, appearance = stages.pop(0)
+            app.theme_var.set(appearance)
+            app._change_theme()
             app._select_algorithm(name)
             app.set_data(values)
             app.target_var.set("60")
@@ -72,7 +76,9 @@ def record(output):
                 root.after(30, check_completion)
 
         def start():
-            app.toggle_run()
+            app.run_button.event_generate("<Enter>")
+            app.run_button.invoke()
+            root.after(700, lambda: app.run_button.event_generate("<Leave>"))
             check_completion()
 
         with log.open("w") as diagnostics:
