@@ -10,14 +10,15 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 <img alt="Python 3.10 or newer" src="https://img.shields.io/badge/Python-3.10%2B-56e0bf?style=for-the-badge&logo=python&logoColor=0a101c" />
 <img alt="13 algorithms" src="https://img.shields.io/badge/13-ALGORITHMS-b09aff?style=for-the-badge" />
 <img alt="No pip dependencies" src="https://img.shields.io/badge/PIP_INSTALLS-ZERO-f5c773?style=for-the-badge" />
+<img alt="Light, Dark, and System themes" src="https://img.shields.io/badge/THEMES-LIGHT_%C2%B7_DARK_%C2%B7_AUTO-75a8e8?style=for-the-badge" />
 
 [🎮 Press play](#press-play) · [🧠 Meet the algorithms](#the-lineup) · [🎛️ Take control](#the-controls) · [🧪 Try a challenge](#challenge-mode)
 
 </div>
 
-![Live Algo Studio demo showing animated Comb Sort, Shell Sort, and Interpolation Search](docs/demo.gif)
+![Live Algo Studio demo showing glass playback controls and animated Comb Sort, Shell Sort, and Interpolation Search in dark and light themes](docs/demo.gif)
 
-<p align="center"><sub>🎬 Actual app footage. Comb Sort → Shell Sort → Interpolation Search. Yes, those bars really do that.</sub></p>
+<p align="center"><sub>🎬 Actual app footage. Dark → Light → Dark. Comb → Shell → Interpolation. A little glass, a lot of motion.</sub></p>
 
 ---
 
@@ -29,6 +30,25 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 | Finish a sort and enjoy the green sweep + sparkle moment. ✨ | Pause, step forward, hover over a bar, and inspect exactly what's happening. | Negatives? Zeros? Duplicates? Bring them. Reduced motion is one click away. |
 
 > 💡 **The best part:** you can stop an algorithm halfway through without breaking anything. Your original input comes right back. No restart ritual required.
+
+<details>
+<summary><strong>🌓 Meet the glow-up: daylight, midnight, and a little liquid glass</strong></summary>
+
+<br>
+
+| ☀️ Light | 🌌 Dark | 🪟 System |
+| :--- | :--- | :--- |
+| Frosted surfaces, inky text, and jewel-tone bars. | Midnight panels, mint highlights, and soft reflections. | Follows Windows' **app color mode**, including changes while the studio is open. |
+
+Choose **System / Light / Dark** beside the title. Windows changes are picked up within about two seconds. On other systems, or when the Windows preference cannot be read, System uses Dark; you can always choose Light manually. Switching keeps your animation, input, focus, and open guide intact.
+
+**The play button got dressed up.** A rounded glass surface, a traveling reflection, a press ripple, and a play icon that morphs into pause. Keyboard focus gets its own outline; <kbd>Space</kbd> or <kbd>Enter</kbd> activates the focused control. The matching Reduced motion pill switches the decorative effects off.
+
+**Fonts already living on your computer:** Segoe UI Variable / Segoe UI on Windows, SF Pro Text / Helvetica Neue when available on macOS, and Noto Sans / DejaVu Sans elsewhere. Code and values use installed coding fonts such as Cascadia, Consolas, or Menlo, with system fallbacks. No font files. No downloads. 🪄
+
+<sub>The glass is drawn in Tkinter, including its reflections; it does not blur other windows or require a compositor extension.</sub>
+
+</details>
 
 <a id="press-play"></a>
 
@@ -120,6 +140,7 @@ On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Ru
 | ✍️ **Apply** | Use your own comma- or space-separated integers. |
 | 🏎️ **Animation speed** | Change the pace—even during a run. |
 | 🌙 **Reduced motion** | Keep the learning; skip the decorative movement. |
+| 🌓 **Theme** | Choose Light, Dark, or the Windows-following System mode without interrupting playback. |
 | 📖 **Algorithm guide** | Open the explanation, pseudocode, and complexity. |
 
 **Input playground:** generated arrays have **8–64 values**. Custom arrays accept **1–64 integers from −999 to 999**. Hover over any bar for its index and exact value.
