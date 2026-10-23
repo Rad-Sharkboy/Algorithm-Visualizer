@@ -31,6 +31,8 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 > 💡 **The best part:** you can stop an algorithm halfway through without breaking anything. Your original input comes right back. No restart ritual required.
 
+> ✨ **[Fresh moves · v2.1.1](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v2.1.1):** clearer sorting steps, recursive Quick/Merge Sort, and stable digit-counting Radix Sort. Follow every comparison, shift, and swap as it happens.
+
 <details>
 <summary><strong>🌓 Meet the glow-up: daylight, midnight, and a little liquid glass</strong></summary>
 
@@ -83,7 +85,7 @@ On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Ru
 | ⚡ **Quick Sort** | Pick a pivot. Everyone chooses a side. Repeat. |
 | 🏔️ **Heap Sort** | The biggest value keeps getting promoted to the end. |
 | 🧮 **Counting Sort** | Keep a tally, then rebuild the lineup. |
-| 📬 **Radix Sort** | Sort digits into buckets, one place at a time. |
+| 📬 **Radix Sort** | Count each digit, build its output, and move to the next place. |
 
 ### 🕵️ The search squad
 
@@ -93,7 +95,7 @@ On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Ru
 | ✂️ **Binary Search** | Rule out half the street with every decision. |
 | 📍 **Interpolation Search** | Estimate the address from the values at either end. |
 
-> 📌 **Search rules:** all three return the **first matching index**, starting at zero. Binary and Interpolation Search sort a copy first, so their result indices refer to that sorted copy. The app tells you when it does this. Reset restores your original order.
+> 📌 **Search rules:** indices start at zero. Linear Search returns the **first matching index**. Binary and Interpolation Search stop at the match they encounter; with duplicates, that may be a later occurrence. They sort a copy first, so their result indices refer to that sorted copy. The app tells you when it does this. Reset restores your original order.
 
 <details>
 <summary><strong>🤓 Open the nerd drawer: complexity, gap sequences, and the fine print</strong></summary>
@@ -118,9 +120,10 @@ On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Ru
 
 - **n** = number of values, **k** = integer range, **d** = base-10 digit count.
 - **Shell** uses the original halving gaps: `n // 2, …, 1`. **Comb** shrinks its gap by 1.3 and finishes only after a gap-1 pass makes no swaps.
-- **Quick** uses the final value as pivot and an explicit stack. **Merge** joins runs iteratively.
-- **Counting** and **Radix** support negative integers too.
-- **Interpolation's average** assumes uniformly distributed, distinct keys. Skewed data and finding the first duplicate can take linear time. Equal endpoints are handled without dividing by zero.
+- **Selection** performs its two array assignments every pass, even when the minimum is already in place; these still count as writes.
+- **Quick** uses the final value as pivot, scans inward from both sides, and recursively sorts the partitions. **Merge** recursively splits the array, then joins halves using two temporary arrays.
+- **Radix** uses ten digit counts, cumulative totals, and a right-to-left output pass before copying back. Each pass multiplies the digit place by ten. Negative keys use an offset; **Counting** also supports negative integers.
+- **Interpolation's average** assumes uniformly distributed, distinct keys. Skewed data can take linear time. Equal endpoints are handled without dividing by zero.
 - Costs above describe the algorithms. Copying visual frames, storing the original input, and drawing the chart add overhead. Sorting a search input is preparation, excluded from search comparison/write counts.
 
 </details>
