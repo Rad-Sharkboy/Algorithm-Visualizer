@@ -16,9 +16,9 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 </div>
 
-![Live Algo Studio demo showing glass playback controls and animated Comb Sort, Shell Sort, and Interpolation Search in dark and light themes](docs/demo.gif)
+![Live Algo Studio demo showing the orbital playback dial, pause and resume, Comb Sort, Shell Sort, and Interpolation Search in dark and light themes](docs/demo.gif)
 
-<p align="center"><sub>🎬 Actual app footage. Dark → Light → Dark. Comb → Shell → Interpolation. A little glass, a lot of motion.</sub></p>
+<p align="center"><sub>🎬 Actual app footage. Dark → Light → Dark. Pause. Breathe. Resume. Watch the orbit come alive.</sub></p>
 
 ---
 
@@ -31,10 +31,10 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 > 💡 **The best part:** you can stop an algorithm halfway through without breaking anything. Your original input comes right back. No restart ritual required.
 
-> ✨ **[Fresh moves · v2.1.1](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v2.1.1):** clearer sorting steps, recursive Quick/Merge Sort, and stable digit-counting Radix Sort. Follow every comparison, shift, and swap as it happens.
+> 🪐 **[Orbit · v2.1.2](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v2.1.2):** the play button is now a tiny kinetic instrument. Twin orbits. A faceted shell. Light that follows your pointer. Press it and set the whole array in motion.
 
 <details>
-<summary><strong>🌓 Meet the glow-up: daylight, midnight, and a little liquid glass</strong></summary>
+<summary><strong>🌓 Meet the glow-up: daylight, midnight, and your own little orbit</strong></summary>
 
 <br>
 
@@ -44,11 +44,13 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 Choose **System / Light / Dark** beside the title. Windows changes are picked up within about two seconds. On other systems, or when the Windows preference cannot be read, System uses Dark; you can always choose Light manually. Switching keeps your animation, input, focus, and open guide intact.
 
-**The play button got dressed up.** A rounded glass surface, a traveling reflection, a press ripple, and a play icon that morphs into pause. Keyboard focus gets its own outline; <kbd>Space</kbd> or <kbd>Enter</kbd> activates the focused control. The matching Reduced motion pill switches the decorative effects off.
+**A tiny instrument. A big invitation to press play.** Two luminous particles orbit the morphing play/pause core inside a faceted housing. An iridescent rim catches the light, reflections follow your pointer, and the surface presses down under your click. The orbit runs with playback, coasts to a stop on pause, and offers **Resume** or **Replay** when you're ready.
+
+Keyboard focus gets a clear outer outline; <kbd>Space</kbd> or <kbd>Enter</kbd> activates the focused control. **Reduced motion** freezes the decorative effects while keeping every control and algorithm step available. Hidden controls stop their animation timers too. The small status light indicates playback, not algorithm progress.
 
 **Fonts already living on your computer:** Segoe UI Variable / Segoe UI on Windows, SF Pro Text / Helvetica Neue when available on macOS, and Noto Sans / DejaVu Sans elsewhere. Code and values use installed coding fonts such as Cascadia, Consolas, or Menlo, with system fallbacks. No font files. No downloads. 🪄
 
-<sub>The glass is drawn in Tkinter, including its reflections; it does not blur other windows or require a compositor extension.</sub>
+<sub>Every orbit, reflection, and bevel is drawn in Tkinter. No image assets, shaders, font downloads, or extra packages are needed to run the app.</sub>
 
 </details>
 
