@@ -39,6 +39,7 @@ def record(output):
         root.lift()
         errors = []
         completed = []
+        show_pause = True
 
         def callback_error(*error):
             errors.append(str(error[1]))
@@ -75,10 +76,23 @@ def record(output):
             else:
                 root.after(30, check_completion)
 
+        def resume_preview():
+            if app.state == "paused":
+                app.run_button.invoke()
+
+        def pause_preview():
+            if app.state == "running":
+                app.run_button.invoke()
+                root.after(900, resume_preview)
+
         def start():
+            nonlocal show_pause
             app.run_button.event_generate("<Enter>")
             app.run_button.invoke()
             root.after(700, lambda: app.run_button.event_generate("<Leave>"))
+            if show_pause:
+                show_pause = False
+                root.after(1100, pause_preview)
             check_completion()
 
         with log.open("w") as diagnostics:
