@@ -10,7 +10,7 @@ from algorithms import ALGORITHMS, Step
 from datasets import generate_values, parse_values
 from motion import bar_poses, blend, ease
 from theme import StudioTheme
-from widgets import GlassButton, MotionToggle
+from widgets import OrbitButton, MotionToggle
 
 
 class Visualizer:
@@ -269,7 +269,7 @@ class Visualizer:
         self.chart_card.rowconfigure(1, weight=1)
         controls = tk.Frame(main, bg=self.palette.BG)
         controls.pack(fill="x", pady=(14, 12))
-        self.run_button = GlassButton(controls, self.theme, self.toggle_run, self.reduced_motion)
+        self.run_button = OrbitButton(controls, self.theme, self.toggle_run, self.reduced_motion)
         self.run_button.pack(side="left")
         self.step_button = self._button(controls, "Step →", self.step_once)
         self.step_button.pack(side="left", padx=(7, 0))
@@ -751,7 +751,7 @@ class Visualizer:
 
     def _space(self, event):
         # Button class bindings already activate focused buttons on Space.
-        if not self._typing() and not isinstance(self.root.focus_get(), (tk.Button, GlassButton)):
+        if not self._typing() and not isinstance(self.root.focus_get(), (tk.Button, OrbitButton)):
             self.toggle_run()
             return "break"
 
