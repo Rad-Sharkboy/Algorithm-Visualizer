@@ -31,6 +31,10 @@ class Palette:
     GLASS_TOP: str
     GLASS_BOTTOM: str
     SHINE: str
+    FROST_EDGE: str
+    SLIDER_TRACK: str
+    SLIDER_FILL: str
+    THUMB_BOTTOM: str
 
 
 PALETTES = {
@@ -40,8 +44,9 @@ PALETTES = {
         PURPLE="#b5a1ff", GOLD="#f5c773", GREEN="#70e5a0", RED="#ff8b9e",
         SELECT="#18372f", SELECT_BORDER="#32685b", HOVER="#1d3044",
         GRID="#243248", AXIS="#8193ae", DISCARDED="#4a5c75",
-        TOOLTIP_BORDER="#607894", ON_ACCENT="#09291f", GLASS_TOP="#234d52",
-        GLASS_BOTTOM="#163239", SHINE="#f4fffd",
+        TOOLTIP_BORDER="#607894", ON_ACCENT="#09291f", GLASS_TOP="#41404b",
+        GLASS_BOTTOM="#252d39", SHINE="#f4fffd", FROST_EDGE="#777b88",
+        SLIDER_TRACK="#303c4c", SLIDER_FILL="#77b5ff", THUMB_BOTTOM="#d8e0ed",
     ),
     "Light": Palette(
         BG="#edf2f8", SIDEBAR="#e5ecf5", PANEL="#ffffff", INSET="#f1f5fa",
@@ -49,8 +54,9 @@ PALETTES = {
         PURPLE="#7551c9", GOLD="#966100", GREEN="#167341", RED="#b83250",
         SELECT="#d4eee5", SELECT_BORDER="#83b8a8", HOVER="#d9e4f0",
         GRID="#e0e7f0", AXIS="#65768e", DISCARDED="#97a6ba",
-        TOOLTIP_BORDER="#92a6bf", ON_ACCENT="#fafffd", GLASS_TOP="#fcfffe",
-        GLASS_BOTTOM="#cbe7e2", SHINE="#f9fffe",
+        TOOLTIP_BORDER="#92a6bf", ON_ACCENT="#fafffd", GLASS_TOP="#feffff",
+        GLASS_BOTTOM="#dce3ef", SHINE="#f9fffe", FROST_EDGE="#b6c2d3",
+        SLIDER_TRACK="#cbd4e1", SLIDER_FILL="#1678ed", THUMB_BOTTOM="#e9edf5",
     ),
 }
 
