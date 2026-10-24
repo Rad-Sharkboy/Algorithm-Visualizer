@@ -1,7 +1,7 @@
 """Build a readable, single-file Python release using only the standard library.
 
-Usage: python3 tools/build_release.py --version 2.1.2
-Outputs: dist/Algo-Studio-v2.1.2.py and dist/SHA256SUMS
+Usage: python3 tools/build_release.py --version 2.1.3
+Outputs: dist/Algo-Studio-v2.1.3.py and dist/SHA256SUMS
 """
 
 import argparse
@@ -18,7 +18,7 @@ MODULES = ("algorithms", "datasets", "motion", "theme", "widgets", "PROJECT")
 
 def version_number(value):
     if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", value):
-        raise argparse.ArgumentTypeError("Use a version such as 2.1.2 (without v).")
+        raise argparse.ArgumentTypeError("Use a version such as 2.1.3 (without v).")
     return value
 
 
