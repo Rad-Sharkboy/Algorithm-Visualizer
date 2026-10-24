@@ -16,49 +16,49 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 </div>
 
-![Live Algo Studio demo showing the orbital playback dial, pause and resume, Comb Sort, Shell Sort, and Interpolation Search in dark and light themes](docs/demo.gif)
+![Live Algo Studio demo showing frosted playback controls, rounded sliders, and sorting and searching in dark and light themes](docs/demo.gif)
 
-<p align="center"><sub>🎬 Actual app footage. Dark → Light → Dark. Pause. Breathe. Resume. Watch the orbit come alive.</sub></p>
+<p align="center"><sub>🎬 Actual app footage. Sorting, searching, and playback controls in Dark and Light themes.</sub></p>
 
 ---
 
-## ✨ A little less textbook. A lot more “aha!”
+## ✨ Visualize each step
 
-| 🕺 Watch the moves | 🔍 Catch every detail | 🎨 Make it yours |
+| Playback | Inspection | Customization |
 | :--- | :--- | :--- |
-| Bars glide through swaps on curved paths. Writes ease into place. Active values glow. | Live comparisons, array writes, highlighted pseudocode, and a description of every step. | Custom arrays, four data presets, adjustable speed, and your own search target. |
-| Finish a sort and enjoy the green sweep + sparkle moment. ✨ | Pause, step forward, hover over a bar, and inspect exactly what's happening. | Negatives? Zeros? Duplicates? Bring them. Reduced motion is one click away. |
+| Animated swaps, value writes, and completion highlights make each operation visible. | Track comparisons, array writes, highlighted pseudocode, and an explanation of every step. | Enter custom arrays, choose from four presets, adjust playback speed, and set search targets. |
+| Pause, resume, or advance one step at a time. | Hover over a bar to inspect its index and value. | Light, Dark, and System themes, with optional Reduced motion. |
 
-> 💡 **The best part:** you can stop an algorithm halfway through without breaking anything. Your original input comes right back. No restart ritual required.
+Stopping a run restores the original array. Negative integers, zeros, and duplicate values are supported.
 
-> 🪐 **[Orbit · v2.1.2](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v2.1.2):** the play button is now a tiny kinetic instrument. Twin orbits. A faceted shell. Light that follows your pointer. Press it and set the whole array in motion.
+> **[v2.1.3 · Frost](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v2.1.3)** introduces rounded playback controls, softly shaded surfaces, and sliders with precise mouse and keyboard input.
 
 <details>
-<summary><strong>🌓 Meet the glow-up: daylight, midnight, and your own little orbit</strong></summary>
+<summary><strong>🌓 Appearance and accessibility</strong></summary>
 
 <br>
 
-| ☀️ Light | 🌌 Dark | 🪟 System |
+| Light | Dark | System |
 | :--- | :--- | :--- |
-| Frosted surfaces, inky text, and jewel-tone bars. | Midnight panels, mint highlights, and soft reflections. | Follows Windows' **app color mode**, including changes while the studio is open. |
+| Pale surfaces, dark text, and clear accent colors. | Dark panels with restrained highlights. | Follows Windows' app color preference, including changes while the app is open. |
 
-Choose **System / Light / Dark** beside the title. Windows changes are picked up within about two seconds. On other systems, or when the Windows preference cannot be read, System uses Dark; you can always choose Light manually. Switching keeps your animation, input, focus, and open guide intact.
+Choose **System / Light / Dark** beside the title. Windows changes are detected within about two seconds. On other systems, or when the preference cannot be read, System uses Dark. Switching themes preserves playback, input, focus, and open guides.
 
-**A tiny instrument. A big invitation to press play.** Two luminous particles orbit the morphing play/pause core inside a faceted housing. An iridescent rim catches the light, reflections follow your pointer, and the surface presses down under your click. The orbit runs with playback, coasts to a stop on pause, and offers **Resume** or **Replay** when you're ready.
+The **Run / Pause / Resume / Replay** button uses a rounded frosted surface, a clear icon, and a subtle press transition. The **animation speed** and **array size** sliders use rounded tracks and raised capsule handles. Click a track, drag a handle, or use the keyboard for precise adjustment.
 
-Keyboard focus gets a clear outer outline; <kbd>Space</kbd> or <kbd>Enter</kbd> activates the focused control. **Reduced motion** freezes the decorative effects while keeping every control and algorithm step available. Hidden controls stop their animation timers too. The small status light indicates playback, not algorithm progress.
+Focused controls have a visible outline. **Reduced motion** disables decorative transitions while preserving playback and single-step inspection. Button and slider effects settle after interaction rather than animating continuously.
 
-**Fonts already living on your computer:** Segoe UI Variable / Segoe UI on Windows, SF Pro Text / Helvetica Neue when available on macOS, and Noto Sans / DejaVu Sans elsewhere. Code and values use installed coding fonts such as Cascadia, Consolas, or Menlo, with system fallbacks. No font files. No downloads. 🪄
+**Native fonts:** Segoe UI Variable / Segoe UI on Windows, SF Pro Text / Helvetica Neue when available on macOS, and Noto Sans / DejaVu Sans elsewhere. Code and values use installed fonts such as Cascadia, Consolas, or Menlo, with system fallbacks. No font downloads are required.
 
-<sub>Every orbit, reflection, and bevel is drawn in Tkinter. No image assets, shaders, font downloads, or extra packages are needed to run the app.</sub>
+<sub>Frosted shading and rounded controls are rendered in Tkinter using the Python standard library.</sub>
 
 </details>
 
 <a id="press-play"></a>
 
-## 🎮 Three commands. You're in.
+## 🎮 Getting started
 
-You'll need **Python 3.10+**, **Tkinter**, and a graphical desktop. No pip shopping list.
+Requires **Python 3.10+**, **Tkinter**, and a graphical desktop. No pip dependencies are required.
 
 ```bash
 git clone https://github.com/Rad-Sharkboy/Algorithm-Visualizer.git
@@ -66,41 +66,41 @@ cd Algorithm-Visualizer
 python3 PROJECT.py
 ```
 
-On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Run `python3 -m tkinter`—a little demo window means you're good to go.
+On Windows, use `py PROJECT.py`. To check whether Tkinter is available, run `python3 -m tkinter`; a small demonstration window should open.
 
-**Pick an algorithm → choose your data → hit Run → follow the glow.**
+**Select an algorithm → configure the input → press Run → inspect each step.**
 
 <a id="the-lineup"></a>
 
-## 🧠 Meet the lineup
+## 🧠 Algorithm library
 
-### 🏁 The sorting crew
+### Sorting
 
-| Algorithm | Its whole personality |
+| Algorithm | Approach |
 | :--- | :--- |
-| 🫧 **Bubble Sort** | One neighbor at a time. Patiently. Very patiently. |
-| 🎯 **Selection Sort** | Find the smallest. Give it the front seat. |
-| 🃏 **Insertion Sort** | Organize the array like a hand of cards. |
-| 🐚 **Shell Sort** | Start with giant steps, then mind the gaps. |
-| 🪮 **Comb Sort** | Detangle the array with a shrinking comb. |
-| 🧩 **Merge Sort** | Tiny sorted teams join forces until everyone's in order. |
-| ⚡ **Quick Sort** | Pick a pivot. Everyone chooses a side. Repeat. |
-| 🏔️ **Heap Sort** | The biggest value keeps getting promoted to the end. |
-| 🧮 **Counting Sort** | Keep a tally, then rebuild the lineup. |
-| 📬 **Radix Sort** | Count each digit, build its output, and move to the next place. |
+| 🫧 **Bubble Sort** | Compare adjacent values and swap pairs that are out of order. |
+| 🎯 **Selection Sort** | Select the minimum remaining value and place it at the next position. |
+| 🃏 **Insertion Sort** | Insert each value into the sorted portion of the array. |
+| 🐚 **Shell Sort** | Apply insertion sort across progressively smaller gaps. |
+| 🪮 **Comb Sort** | Compare and swap values separated by a shrinking gap. |
+| 🧩 **Merge Sort** | Recursively sort two halves, then merge them. |
+| ⚡ **Quick Sort** | Partition around a pivot and recursively sort each side. |
+| 🏔️ **Heap Sort** | Build a max heap and repeatedly extract its largest value. |
+| 🧮 **Counting Sort** | Count integer frequencies, then reconstruct the sorted array. |
+| 📬 **Radix Sort** | Process digits from least to most significant with stable counting passes. |
 
-### 🕵️ The search squad
+### Searching
 
-| Algorithm | How it finds the suspect |
+| Algorithm | Approach |
 | :--- | :--- |
-| 🚶 **Linear Search** | Knock on every door until the target answers. |
-| ✂️ **Binary Search** | Rule out half the street with every decision. |
-| 📍 **Interpolation Search** | Estimate the address from the values at either end. |
+| 🚶 **Linear Search** | Check each value in sequence until a match is found. |
+| ✂️ **Binary Search** | Repeatedly halve the search interval in a sorted array. |
+| 📍 **Interpolation Search** | Estimate the target position using the values at the interval boundaries. |
 
 > 📌 **Search rules:** indices start at zero. Linear Search returns the **first matching index**. Binary and Interpolation Search stop at the match they encounter; with duplicates, that may be a later occurrence. They sort a copy first, so their result indices refer to that sorted copy. The app tells you when it does this. Reset restores your original order.
 
 <details>
-<summary><strong>🤓 Open the nerd drawer: complexity, gap sequences, and the fine print</strong></summary>
+<summary><strong>📊 Complexity and implementation details</strong></summary>
 
 <br>
 
@@ -132,26 +132,27 @@ On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Ru
 
 <a id="the-controls"></a>
 
-## 🎛️ You're the director
+## 🎛️ Playback and input controls
 
-| Control | What happens |
+| Control | Action |
 | :--- | :--- |
-| ▶️ **Run / Pause / Resume** | Let it move. Freeze the action. Keep going. |
+| ▶️ **Run / Pause / Resume** | Start, pause, or continue playback. |
 | 👣 **Step** | Inspect one exact algorithm snapshot at a time. |
-| 🛑 **Stop** | Cancel the run and rescue your original input. |
-| ↩️ **Reset** | Same data, fresh counters, clean slate. |
-| 🔁 **Replay** | Give the original array another round. |
-| 🎲 **Generate** | Random, nearly sorted, reversed, or just a few unique values. |
+| 🛑 **Stop** | Cancel playback and restore the original input. |
+| ↩️ **Reset** | Restore the original input and clear the counters. |
+| 🔁 **Replay** | Run the algorithm again on the original array. |
+| 🎲 **Generate** | Create random, nearly sorted, reversed, or few-unique-value arrays. |
 | ✍️ **Apply** | Use your own comma- or space-separated integers. |
-| 🏎️ **Animation speed** | Change the pace—even during a run. |
-| 🌙 **Reduced motion** | Keep the learning; skip the decorative movement. |
+| 🏎️ **Animation speed** | Adjust playback speed, including while an algorithm is running. |
+| **Array size** | Choose 8–64 values for the next generated array, then press Generate. |
+| 🌙 **Reduced motion** | Disable decorative transitions while retaining every algorithm step. |
 | 🌓 **Theme** | Choose Light, Dark, or the Windows-following System mode without interrupting playback. |
 | 📖 **Algorithm guide** | Open the explanation, pseudocode, and complexity. |
 
-**Input playground:** generated arrays have **8–64 values**. Custom arrays accept **1–64 integers from −999 to 999**. Hover over any bar for its index and exact value.
+**Input limits:** generated arrays have **8–64 values**. Custom arrays accept **1–64 integers from −999 to 999**. Hover over any bar for its index and exact value.
 
 <details>
-<summary><strong>⌨️ Keyboard cheat sheet — mouse optional</strong></summary>
+<summary><strong>⌨️ Keyboard shortcuts</strong></summary>
 
 <br>
 
@@ -164,12 +165,12 @@ On Windows, `py PROJECT.py` works too. Not sure whether Tkinter is available? Ru
 | <kbd>Enter</kbd> in **Your Data** | Apply the array |
 | <kbd>Enter</kbd> in **Target** | Run the search |
 
-Typing and cursor movement still work normally in input fields. Focused buttons keep their standard Space activation.
+Typing and cursor movement work normally in input fields. Focused buttons support Space and Enter. A focused slider uses arrow keys for one-unit adjustments, Page Up / Page Down for ten units, and Home / End for its limits; these keys do not advance the algorithm.
 
 </details>
 
 <details>
-<summary><strong>🌈 Decode the glow & the numbers</strong></summary>
+<summary><strong>🎨 Color guide and metrics</strong></summary>
 
 <br>
 
@@ -181,29 +182,29 @@ Typing and cursor movement still work normally in input fields. Focused buttons 
 | 💚 Green | Settled value or search match |
 | 🩶 Muted gray | Eliminated search position |
 
-Every step also has a text description. Found it? Missed it? Finished sorting? You'll get an explicit message.
+Each step includes a text description. Search results and sort completion are reported explicitly.
 
 - **Comparisons:** value comparisons made by the algorithm.
 - **Array writes:** assignments to the main array; a swap counts as two. Auxiliary buffers and buckets are excluded.
 - **Visual steps:** displayed algorithm snapshots, including explanation and completion frames. Animation in-between frames do not inflate this count.
-- **Active time:** animation time excluding pauses. This is a learning tool, not a stopwatch benchmark.
+- **Active time:** animation time excluding pauses. This measures visualization time rather than algorithm execution performance.
 
 </details>
 
 <a id="challenge-mode"></a>
 
-## 🧪 Tiny challenges. Big brain energy.
+## 🧪 Examples to explore
 
-| Mission | Try this |
+| Example | Procedure |
 | :--- | :--- |
-| 🪮 **The long-distance swap** | Paste `76, 21, 60, 12, 91, 43, 9, 68`, choose **Comb Sort**, and watch distant bars trade places. |
-| 🐚 **Mind the gap** | Replay that same input with **Shell Sort**. Spot the moment the gap becomes 1. |
-| 👯 **The duplicate detective** | Paste `9, -4, 9, 0, -4, 12`, search for `-4`, and compare Linear with Interpolation. Why are the indices different? |
-| 🫧 **Bubble's easy day** | Generate a nearly sorted array. Compare Bubble's counts with a reversed input of the same size. |
-| 🧊 **Freeze frame** | Pause a merge, press Step, and explain the next write before it happens. |
+| 🪮 **Comb Sort gaps** | Paste `76, 21, 60, 12, 91, 43, 9, 68`, choose **Comb Sort**, and watch distant bars trade places. |
+| 🐚 **Shell Sort passes** | Replay that same input with **Shell Sort**. Spot the moment the gap becomes 1. |
+| 👯 **Duplicate search values** | Paste `9, -4, 9, 0, -4, 12`, search for `-4`, and compare Linear with Interpolation. Why are the indices different? |
+| 🫧 **Input order and comparisons** | Generate a nearly sorted array. Compare Bubble's counts with a reversed input of the same size. |
+| 🧊 **Inspect a merge** | Pause a merge, press Step, and explain the next write before it happens. |
 
 <details>
-<summary><strong>🛠️ Peek under the hood</strong></summary>
+<summary><strong>🛠️ Project structure</strong></summary>
 
 <br>
 
@@ -211,10 +212,11 @@ Every step also has a text description. Found it? Missed it? Finished sorting? Y
 Algo Studio
 ├── PROJECT.py          🎛️ Interface + animation controller
 ├── algorithms.py       🧠 13 incremental algorithms
-├── motion.py           🕺 Easing, colors + swap trajectories
+├── motion.py           Easing, colors + swap trajectories
 ├── datasets.py         🎲 Presets + input validation
 ├── theme.py            🎨 Palette, fonts + widget styling
 ├── docs/               🎬 The actual app demo
+├── widgets.py          Frosted controls + sliders
 └── tools/record_demo.py 📹 Demo recorder
 ```
 
@@ -222,7 +224,7 @@ Tk's event loop keeps animations responsive without worker threads or blocking s
 
 Pausing settles the current visual transition. Single-step shows an exact snapshot. Very fast playback skips transitions to keep up; reduced motion disables transitions and completion effects entirely.
 
-The layout supports windows from **1000 × 740**. On shorter windows, inline notes tuck away; **Algorithm guide** stays available. Importing the modules does not launch the app.
+The layout supports windows from **1000 × 740**. On shorter windows, inline notes are hidden; **Algorithm guide** stays available. Importing the modules does not launch the app.
 
 </details>
 
@@ -230,8 +232,8 @@ The layout supports windows from **1000 × 740**. On shorter windows, inline not
 
 <div align="center">
 
-### 💭 Read the idea. Predict the next move. Press play.
+### Explore the algorithm. Inspect each step.
 
-**Made for the moment when the algorithm finally clicks.** ✨
+A focused environment for understanding sorting and searching.
 
 </div>
