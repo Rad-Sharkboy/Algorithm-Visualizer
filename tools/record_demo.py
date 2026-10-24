@@ -83,7 +83,18 @@ def record(output):
         def pause_preview():
             if app.state == "running":
                 app.run_button.invoke()
+                preview_slider(app.speed_scale, 55)
                 root.after(900, resume_preview)
+
+        def preview_slider(slider, target):
+            left, right, center = slider._geometry()
+            destination = left + (target - slider.minimum) / (slider.maximum - slider.minimum) * (right - left)
+            slider.event_generate("<ButtonPress-1>", x=round(center), y=18)
+            for step in range(1, 9):
+                x = round(center + (destination - center) * step / 8)
+                root.after(step * 55, lambda position=x: slider.event_generate("<B1-Motion>", x=position, y=18))
+            root.after(500, lambda: slider.event_generate("<ButtonRelease-1>", x=round(destination), y=18))
+            root.after(550, lambda: slider.event_generate("<Leave>"))
 
         def start():
             nonlocal show_pause
