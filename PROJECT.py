@@ -10,7 +10,7 @@ from algorithms import ALGORITHMS, Step
 from datasets import generate_values, parse_values
 from motion import bar_poses, blend, ease
 from theme import StudioTheme
-from widgets import OrbitButton, MotionToggle
+from widgets import FrostButton, FrostSlider, MotionToggle
 
 
 class Visualizer:
@@ -93,10 +93,6 @@ class Visualizer:
                   foreground=[("readonly", self.palette.TEXT)],
                   selectbackground=[("readonly", self.palette.INSET)],
                   selectforeground=[("readonly", self.palette.TEXT)])
-        style.configure("Studio.Horizontal.TScale", background=self.palette.ACCENT,
-                        troughcolor=self.palette.INSET, bordercolor=self.palette.BORDER,
-                        lightcolor=self.palette.ACCENT, darkcolor=self.palette.ACCENT,
-                        sliderlength=18, sliderrelief="flat", borderwidth=0)
         self.root.option_add("*TCombobox*Listbox.background", self.palette.INSET)
         self.root.option_add("*TCombobox*Listbox.foreground", self.palette.TEXT)
         self.root.option_add("*TCombobox*Listbox.selectBackground", self.palette.SELECT)
@@ -269,7 +265,7 @@ class Visualizer:
         self.chart_card.rowconfigure(1, weight=1)
         controls = tk.Frame(main, bg=self.palette.BG)
         controls.pack(fill="x", pady=(14, 12))
-        self.run_button = OrbitButton(controls, self.theme, self.toggle_run, self.reduced_motion)
+        self.run_button = FrostButton(controls, self.theme, self.toggle_run, self.reduced_motion)
         self.run_button.pack(side="left")
         self.step_button = self._button(controls, "Step →", self.step_once)
         self.step_button.pack(side="left", padx=(7, 0))
@@ -281,9 +277,8 @@ class Visualizer:
         speed_box.pack(side="right")
         self.speed_label = self._label(speed_box, "", 8, self.palette.MUTED)
         self.speed_label.pack(anchor="e")
-        self.speed_scale = ttk.Scale(speed_box, from_=0, to=100, variable=self.speed_var,
-                                     command=self._speed_changed, length=145,
-                                     style="Studio.Horizontal.TScale")
+        self.speed_scale = FrostSlider(speed_box, self.theme, self.speed_var, self._speed_changed,
+                                       self.reduced_motion, from_=0, to=100, length=176)
         self.speed_scale.pack()
         self._speed_changed()
         data = tk.Frame(main, bg=self.palette.PANEL, highlightbackground=self.palette.BORDER, highlightthickness=1)
@@ -297,9 +292,8 @@ class Visualizer:
         self.preset_box.pack(side="left")
         self.size_label = self._label(data_top, "28 values", 8, self.palette.MUTED)
         self.size_label.pack(side="left", padx=(12, 6))
-        self.size_scale = ttk.Scale(data_top, from_=8, to=64, variable=self.size_var,
-                                    command=self._size_changed, length=90,
-                                    style="Studio.Horizontal.TScale")
+        self.size_scale = FrostSlider(data_top, self.theme, self.size_var, self._size_changed,
+                                      self.reduced_motion, from_=8, to=64, length=110)
         self.size_scale.pack(side="left", fill="x", expand=True)
         self.shuffle_button = self._button(data_top, "↻  Generate", self.new_array)
         self.shuffle_button.pack(side="right", padx=(8, 0))
@@ -612,6 +606,8 @@ class Visualizer:
     def _motion_preference_changed(self):
         self.run_button.motion_changed()
         self.motion_toggle.motion_changed()
+        self.speed_scale.motion_changed()
+        self.size_scale.motion_changed()
         self._stop_motion()
         self._draw()
 
@@ -747,11 +743,11 @@ class Visualizer:
                 break
 
     def _typing(self):
-        return isinstance(self.root.focus_get(), (tk.Entry, ttk.Combobox, ttk.Scale))
+        return isinstance(self.root.focus_get(), (tk.Entry, ttk.Combobox, FrostSlider))
 
     def _space(self, event):
         # Button class bindings already activate focused buttons on Space.
-        if not self._typing() and not isinstance(self.root.focus_get(), (tk.Button, OrbitButton)):
+        if not self._typing() and not isinstance(self.root.focus_get(), (tk.Button, FrostButton)):
             self.toggle_run()
             return "break"
 
