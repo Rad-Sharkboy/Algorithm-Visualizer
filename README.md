@@ -9,7 +9,6 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 <img alt="Python 3.10 or newer" src="https://img.shields.io/badge/Python-3.10%2B-56e0bf?style=for-the-badge&logo=python&logoColor=0a101c" />
 <img alt="13 algorithms" src="https://img.shields.io/badge/13-ALGORITHMS-b09aff?style=for-the-badge" />
-<img alt="No pip dependencies" src="https://img.shields.io/badge/PIP_INSTALLS-ZERO-f5c773?style=for-the-badge" />
 <img alt="Light, Dark, and System themes" src="https://img.shields.io/badge/THEMES-LIGHT_%C2%B7_DARK_%C2%B7_AUTO-75a8e8?style=for-the-badge" />
 
 [🎮 Press play](#press-play) · [🧠 Meet the algorithms](#the-lineup) · [🎛️ Take control](#the-controls) · [🧪 Try a challenge](#challenge-mode)
