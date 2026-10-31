@@ -1,165 +1,133 @@
-"""Light/dark palettes, native font choices, and live Tk recoloring."""
+"""Instrument palettes, type, spacing, and semantic widget color bindings."""
 
-from dataclasses import dataclass
+from types import SimpleNamespace
 import sys
 import tkinter as tk
 from tkinter import font as tkfont
+import weakref
+
+from motion import lerp_color, ease_in_out_quad
 
 
-@dataclass(frozen=True)
-class Palette:
-    BG: str
-    SIDEBAR: str
-    PANEL: str
-    INSET: str
-    BORDER: str
-    TEXT: str
-    MUTED: str
-    ACCENT: str
-    PURPLE: str
-    GOLD: str
-    GREEN: str
-    RED: str
-    SELECT: str
-    SELECT_BORDER: str
-    HOVER: str
-    GRID: str
-    AXIS: str
-    DISCARDED: str
-    TOOLTIP_BORDER: str
-    ON_ACCENT: str
-    GLASS_TOP: str
-    GLASS_BOTTOM: str
-    SHINE: str
-    FROST_EDGE: str
-    SLIDER_TRACK: str
-    SLIDER_FILL: str
-    THUMB_BOTTOM: str
-
-
-PALETTES = {
-    "Dark": Palette(
-        BG="#0a101c", SIDEBAR="#0e1625", PANEL="#111d2e", INSET="#0c1524",
-        BORDER="#29394e", TEXT="#edf3fc", MUTED="#a0afc4", ACCENT="#65e5c4",
-        PURPLE="#b5a1ff", GOLD="#f5c773", GREEN="#70e5a0", RED="#ff8b9e",
-        SELECT="#18372f", SELECT_BORDER="#32685b", HOVER="#1d3044",
-        GRID="#243248", AXIS="#8193ae", DISCARDED="#4a5c75",
-        TOOLTIP_BORDER="#607894", ON_ACCENT="#09291f", GLASS_TOP="#41404b",
-        GLASS_BOTTOM="#252d39", SHINE="#f4fffd", FROST_EDGE="#777b88",
-        SLIDER_TRACK="#303c4c", SLIDER_FILL="#77b5ff", THUMB_BOTTOM="#d8e0ed",
-    ),
-    "Light": Palette(
-        BG="#edf2f8", SIDEBAR="#e5ecf5", PANEL="#ffffff", INSET="#f1f5fa",
-        BORDER="#c8d3e1", TEXT="#18273c", MUTED="#53647b", ACCENT="#087767",
-        PURPLE="#7551c9", GOLD="#966100", GREEN="#167341", RED="#b83250",
-        SELECT="#d4eee5", SELECT_BORDER="#83b8a8", HOVER="#d9e4f0",
-        GRID="#e0e7f0", AXIS="#65768e", DISCARDED="#97a6ba",
-        TOOLTIP_BORDER="#92a6bf", ON_ACCENT="#fafffd", GLASS_TOP="#feffff",
-        GLASS_BOTTOM="#dce3ef", SHINE="#f9fffe", FROST_EDGE="#b6c2d3",
-        SLIDER_TRACK="#cbd4e1", SLIDER_FILL="#1678ed", THUMB_BOTTOM="#e9edf5",
-    ),
+THEMES = {
+    "Dark": dict(BG="#0E0D0B", PANEL="#171512", INSET="#12110E", BORDER="#2A261F",
+                 TEXT="#EDE6D6", MUTED="#8C8472", BAR="#FFB454", ACCENT="#FFB454",
+                 COMPARE="#FF5A4E", PIVOT="#5CE1E6", SETTLED="#B6E36B",
+                 DISCARDED="#554E41", ON_ACCENT="#0E0D0B"),
+    "Light": dict(BG="#F2EDE2", PANEL="#FBF8F1", INSET="#EAE4D8", BORDER="#D8D0BE",
+                  TEXT="#1C1A16", MUTED="#7A7260", BAR="#1F3A33", ACCENT="#92500F",
+                  COMPARE="#B93428", PIVOT="#087A80", SETTLED="#526F1D",
+                  DISCARDED="#A69D89", ON_ACCENT="#FBF8F1", THUMB="#FBF8F1"),
+    "Red": dict(BG="#130D10", PANEL="#1D1418", INSET="#170F13", BORDER="#3B272F",
+                TEXT="#F3E5E3", MUTED="#A68D94", BAR="#FA727A", ACCENT="#F27880",
+                BAR_MID="#D93650", BAR_BASE="#771D39", BUTTON_TOP="#F58189", BUTTON_BASE="#E66379",
+                COMPARE="#FFB7AB", PIVOT="#CCB7EF", SETTLED="#B8D59D",
+                DISCARDED="#60434D", ON_ACCENT="#210F17"),
+    "Maroon": dict(BG="#130C11", PANEL="#1E141C", INSET="#180F16", BORDER="#3B2835",
+                   TEXT="#F0E3EB", MUTED="#AA8D9F", BAR="#E49ABA", ACCENT="#DF96B3",
+                   BAR_MID="#AC487D", BAR_BASE="#551A3F", BUTTON_TOP="#E6A1BD", BUTTON_BASE="#D385A8",
+                   COMPARE="#FF8B80", PIVOT="#CDBBEA", SETTLED="#C1D59E",
+                   DISCARDED="#614454", ON_ACCENT="#210F1B"),
+    "Purple": dict(BG="#110E15", PANEL="#1A1521", INSET="#15111B", BORDER="#382E43",
+                   TEXT="#F0E8F2", MUTED="#A393B0", BAR="#CBA6DE", ACCENT="#C4A1D7",
+                   BAR_MID="#9764B2", BAR_BASE="#4F2D65", BUTTON_TOP="#D0ADDF", BUTTON_BASE="#B691CD",
+                   COMPARE="#FF9C9C", PIVOT="#F1BED5", SETTLED="#BFD7A4",
+                   DISCARDED="#54425F", ON_ACCENT="#1B1024"),
 }
+for _palette in THEMES.values():
+    for _role in ("BAR", "COMPARE", "PIVOT", "SETTLED", "DISCARDED"):
+        _palette.setdefault(_role + "_MID", lerp_color(_palette["INSET"], _palette[_role], .8175))
+        _palette.setdefault(_role + "_BASE", lerp_color(_palette["INSET"], _palette[_role], .695))
+    _palette.setdefault("BUTTON_TOP", _palette["ACCENT"])
+    _palette.setdefault("BUTTON_BASE", _palette["ACCENT"])
+    _palette.setdefault("THUMB", _palette["TEXT"])
+
+THEME_LABELS = {"System": "System", "Dark": "Phosphor", "Light": "Paper",
+                "Red": "Red", "Maroon": "Maroon", "Purple": "Purple"}
+FONT_FAMILIES = {
+    "display": ("Georgia", "Cambria", "Palatino Linotype", "Palatino", "Liberation Serif", "DejaVu Serif"),
+    "mono": ("Consolas", "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Courier New"),
+}
+SPACING = dict(sidebar=210, outer=28, section=18)
 
 
 def system_theme():
-    """Follow Windows' app preference, not its separate taskbar preference.
-
-    Registry access is read-only. Missing keys, restricted access, and other
-    operating systems use Dark; the manual Light/Dark choices always work.
-    """
     if sys.platform == "win32":
         try:
             import winreg
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                                 r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize") as key:
-                light, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
-            return "Light" if light else "Dark"
+                return "Light" if winreg.QueryValueEx(key, "AppsUseLightTheme")[0] else "Dark"
         except (ImportError, OSError):
             pass
     return "Dark"
 
 
 def configure_fonts(root):
-    """Prefer the host's UI and coding fonts; never download or bundle a font."""
-    families = {name.casefold(): name for name in tkfont.families(root)}
-
-    def choose(candidates, fallback):
-        return next((families[name.casefold()] for name in candidates
-                     if name.casefold() in families),
+    available = {name.casefold(): name for name in tkfont.families(root)}
+    def choose(role, fallback):
+        return next((available[name.casefold()] for name in FONT_FAMILIES[role] if name.casefold() in available),
                     tkfont.nametofont(fallback, root=root).actual("family"))
-
-    font = choose(("Segoe UI Variable Text", "Segoe UI", "SF Pro Text", "Helvetica Neue",
-                   "Noto Sans", "DejaVu Sans", "Liberation Sans"), "TkDefaultFont")
-    mono = choose(("Cascadia Code", "Cascadia Mono", "Consolas", "SF Mono", "Menlo",
-                   "DejaVu Sans Mono", "Liberation Mono"), "TkFixedFont")
-    for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont",
-                 "TkCaptionFont", "TkSmallCaptionFont"):
-        tkfont.nametofont(name, root=root).configure(family=font)
-    tkfont.nametofont("TkFixedFont", root=root).configure(family=mono)
-    return font, mono
+    display, mono = choose("display", "TkDefaultFont"), choose("mono", "TkFixedFont")
+    for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkFixedFont"):
+        tkfont.nametofont(name, root=root).configure(family=mono)
+    return display, mono
 
 
 class StudioTheme:
-    def __init__(self, root, mode="System"):
-        self.root = root
+    def __init__(self, root, manager, reduced_motion, mode="System"):
+        self.root, self.manager, self.reduced_motion = root, manager, reduced_motion
         self.mode = mode
         self.name = system_theme() if mode == "System" else mode
-        self.palette = PALETTES[self.name]
-        self.font, self.mono = configure_fonts(root)
+        self.palette = SimpleNamespace(**THEMES[self.name])
+        self.display, self.mono = configure_fonts(root)
+        self.font = self.mono
+        self._bindings = weakref.WeakKeyDictionary()
+        self._views = weakref.WeakSet()
+
+    def bind(self, widget, **roles):
+        self._bindings.setdefault(widget, {}).update(roles)
+        self._apply_widget(widget, roles)
+        return widget
+
+    def register(self, view):
+        self._views.add(view)
+
+    def _apply_widget(self, widget, roles):
+        widget.configure(**{option: getattr(self.palette, role) for option, role in roles.items()})
+
+    def refresh(self):
+        for widget, roles in tuple(self._bindings.items()):
+            if widget.winfo_exists():
+                self._apply_widget(widget, roles)
+        for view in tuple(self._views):
+            if view.winfo_exists():
+                view.refresh_theme()
 
     def select(self, mode):
-        if mode not in ("System", "Light", "Dark"):
-            raise ValueError(f"Unknown appearance: {mode}")
+        if mode != "System" and mode not in THEMES:
+            raise ValueError(f"Unknown theme: {mode}")
         self.mode = mode
-        name = system_theme() if mode == "System" else mode
-        if name == self.name:
+        target = system_theme() if mode == "System" else mode
+        if target == self.name:
             return False
-        previous = self.palette
-        self.name, self.palette = name, PALETTES[name]
-        colors = {value: getattr(self.palette, role) for role, value in vars(previous).items()}
-        # Recolor existing widgets instead of rebuilding them: focus, selection,
-        # open guides, algorithm iterators, and scheduled playback all survive.
-        self._recolor(self.root, colors)
+        self.name = target
+        start, end = vars(self.palette).copy(), THEMES[target]
+        def update(amount):
+            colors = end if amount >= 1 else {role: lerp_color(start[role], color, amount) for role, color in end.items()}
+            self.palette = SimpleNamespace(**colors)
+            self.refresh()
+        self.manager.cancel("theme:fade")
+        if self.reduced_motion.get():
+            update(1)
+        else:
+            self.manager.tween("theme:fade", .25, update, easing=ease_in_out_quad)
         return True
 
-    def _recolor(self, widget, colors):
-        options = widget.keys()
-        changes = {}
-        for option in ("background", "foreground", "activebackground", "activeforeground",
-                       "disabledbackground", "disabledforeground", "highlightbackground",
-                       "highlightcolor", "insertbackground", "selectbackground",
-                       "selectforeground", "selectcolor", "readonlybackground"):
-            if option in options:
-                current = str(widget.cget(option)).lower()
-                if current in colors:
-                    changes[option] = colors[current]
-        if changes:
-            widget.configure(**changes)
-        if hasattr(widget, "refresh_theme"):
-            widget.refresh_theme()
-        elif isinstance(widget, tk.Canvas):
-            for item in widget.find_all():
-                for option in ("fill", "outline"):
-                    if option in widget.itemconfigure(item):
-                        current = widget.itemcget(item, option).lower()
-                        if current in colors:
-                            widget.itemconfigure(item, **{option: colors[current]})
-        for child in widget.winfo_children():
-            self._recolor(child, colors)
+    def frame(self, parent, role="BG", **kwargs):
+        return self.bind(tk.Frame(parent, bd=0, relief="flat", **kwargs), bg=role)
 
-    def label(self, parent, text="", size=10, color=None, bold=False, bg=None, **kwargs):
-        return tk.Label(parent, text=text, bg=bg or parent.cget("bg"),
-                        fg=color or self.palette.TEXT,
-                        font=(self.font, size, "bold" if bold else "normal"), **kwargs)
-
-    def button(self, parent, text, command, primary=False, width=None):
-        p = self.palette
-        return tk.Button(parent, text=text, command=command,
-                         bg=p.ACCENT if primary else p.BORDER,
-                         fg=p.ON_ACCENT if primary else p.TEXT,
-                         activebackground=p.SELECT if primary else p.HOVER,
-                         activeforeground=p.TEXT, disabledforeground=p.MUTED,
-                         relief="flat", bd=0, padx=14, pady=9, cursor="hand2", width=width,
-                         font=(self.font, 10, "bold"), highlightthickness=1,
-                         highlightbackground=p.ACCENT if primary else p.BORDER,
-                         highlightcolor=p.ACCENT, takefocus=True)
+    def label(self, parent, text="", size=9, role="TEXT", bg="BG", bold=False, **kwargs):
+        label = tk.Label(parent, text=text, font=(self.mono, size, "bold" if bold else "normal"),
+                         bd=0, relief="flat", **kwargs)
+        return self.bind(label, fg=role, bg=bg)
