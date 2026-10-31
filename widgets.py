@@ -1,223 +1,100 @@
-"""Frosted playback controls and sliders drawn entirely in Tk."""
+"""Flat instrument controls with retained items and a shared animation clock."""
 
 import math
-import struct
-import zlib
-import time
 import tkinter as tk
-from tkinter import font as tkfont
 
-from motion import blend, ease
-
-
-def rounded_panel(canvas, x0, y0, x1, y1, radius, **options):
-    radius = min(radius, (x1 - x0) / 2, (y1 - y0) / 2)
-    points = []
-    for cx, cy, start in ((x1 - radius, y0 + radius, -90),
-                          (x1 - radius, y1 - radius, 0),
-                          (x0 + radius, y1 - radius, 90),
-                          (x0 + radius, y0 + radius, 180)):
-        for step in range(9):
-            angle = math.radians(start + step * 90 / 8)
-            points.extend((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
-    return canvas.create_polygon(*points, **options)
+from canvas_items import RetainedCanvas
+from motion import lerp_color
 
 
-def frosted_image(canvas, width, height, radius, top, bottom, edge, background, shadow=.20):
-    width, height = max(2, round(width)), max(2, round(height))
-    key = (width, height, radius, top, bottom, edge, background, shadow)
-    cache = canvas._surface_cache
-    if key in cache:
-        return cache[key]
-    colors = [tuple(int(color[i:i + 2], 16) for i in (1, 3, 5))
-              for color in (top, bottom, edge, background)]
-    upper, lower, rim, bg = colors
-    pad = 4
-    half_w, half_h = width / 2 - pad, height / 2 - pad - 1
-    radius = min(radius, half_w, half_h)
-    pixels = bytearray()
-    for y in range(height):
-        for x in range(width):
-            dx = abs(x + .5 - width / 2) - half_w + radius
-            dy = abs(y + .5 - (height / 2 - 1)) - half_h + radius
-            distance = math.hypot(max(0, dx), max(0, dy)) + min(max(dx, dy), 0) - radius
-            coverage = max(0, min(1, .5 - distance))
-            shade = shadow * math.exp(-max(0, distance) ** 2 / 5) * max(0, min(1, y / height))
-            base = [value * (1 - shade) for value in bg]
-            if coverage:
-                amount = max(0, min(1, (y - pad) / max(1, height - 2 * pad)))
-                sheen = .10 * math.exp(-((amount - .18) / .22) ** 2)
-                border = max(0, min(1, distance + 1.1)) * (.8 - .35 * amount)
-                face = [a + (b - a) * amount for a, b in zip(upper, lower)]
-                face = [value + (255 - value) * sheen for value in face]
-                face = [value + (outline - value) * border for value, outline in zip(face, rim)]
-                base = [a + (b - a) * coverage for a, b in zip(base, face)]
-            pixels.extend(max(0, min(255, round(value))) for value in base)
-    data = f"P6\n{width} {height}\n255\n".encode() + pixels
-    texture = tk.PhotoImage(master=canvas, data=data, format="PPM")
-    cache[key] = texture
-    if len(cache) > 24:
-        del cache[next(iter(cache))]
-    return texture
-
-
-def playback_glyph(canvas, amount, color):
-    amount = round(amount * 20) / 20
-    key = (amount, color)
-    if key in canvas._glyph_cache:
-        return canvas._glyph_cache[key]
-    rgb = bytes(int(color[i:i + 2], 16) for i in (1, 3, 5))
-    play = ((-3, -5, 1, -2.5, 1, 2.5, -3, 5), (1, -2.5, 5, 0, 5, 0, 1, 2.5))
-    pause = ((-4, -4.5, -1.5, -4.5, -1.5, 4.5, -4, 4.5),
-             (1.5, -4.5, 4, -4.5, 4, 4.5, 1.5, 4.5))
-    polygons = []
-    for start, end in zip(play, pause):
-        points = [a + (b - a) * amount for a, b in zip(start, end)]
-        polygons.append(list(zip(points[::2], points[1::2])))
-    raw = bytearray()
-    for y in range(24):
-        raw.append(0)
-        for x in range(24):
-            px, py = x - 11.5, y - 11.5
-            coverage = max(0, min(1, 1.3 - abs(math.hypot(px, py) - 10)))
-            if abs(px) < 6 and abs(py) < 6:
-                for polygon in polygons:
-                    crosses, distances = [], []
-                    for (ax, ay), (bx, by) in zip(polygon, polygon[1:] + polygon[:1]):
-                        dx, dy = bx - ax, by - ay
-                        length = dx * dx + dy * dy
-                        if length:
-                            t = max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / length))
-                            distances.append(math.hypot(px - ax - t * dx, py - ay - t * dy))
-                            crosses.append(dx * (py - ay) - dy * (px - ax))
-                    inside = all(v >= 0 for v in crosses) or all(v <= 0 for v in crosses)
-                    distance = min(distances)
-                    coverage = max(coverage, max(0, min(1, .5 + distance if inside else .5 - distance)))
-            raw.extend(rgb + bytes((round(255 * coverage),)))
-    def chunk(kind, data):
-        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
-    png = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 24, 24, 8, 6, 0, 0, 0))
-    png += chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b'')
-    image = tk.PhotoImage(master=canvas, data=png, format='PNG')
-    canvas._glyph_cache[key] = image
-    if len(canvas._glyph_cache) > 48:
-        del canvas._glyph_cache[next(iter(canvas._glyph_cache))]
-    return image
-
-
-class FrostButton(tk.Canvas):
-    """A frosted playback pill with keyboard activation and a morphing icon."""
-
-    def __init__(self, parent, theme, command, reduced_motion, text="Run", width=148, height=54):
-        super().__init__(parent, width=width, height=height, bg=parent.cget("bg"),
-                         highlightthickness=0, bd=0, takefocus=True, cursor="hand2")
-        self.theme = theme
-        self.command = command
-        self.reduced_motion = reduced_motion
-        self._text = text
+class AnimatedButton(RetainedCanvas):
+    def __init__(self, parent, theme, manager, reduced_motion, command, text="", icon=None,
+                 primary=False, width=106, height=40, role="BG"):
+        super().__init__(parent, theme, manager, role=role, width=width, height=height, takefocus=True, cursor="hand2")
+        self.reduced_motion, self.command = reduced_motion, command
+        self._text, self.icon, self.primary = text, icon, primary
         self._state = "normal"
+        self._hovered = self._pressed = self._focused = self.selected = False
+        self._hover_amount = self._press_amount = self._icon = 0.0
+        self._icon_target = 0.0
         self._playback = "ready"
-        self._hovered = self._pressed = self._focused = False
-        self._closed = False
-        self._effect_id = None
-        self._surface_cache = {}
-        self._glyph_cache = {}
-        self._label_font = tkfont.Font(root=self, family=theme.font, size=12, weight="bold")
-        self._press_amount = self._press_from = 0.0
-        self._icon = self._icon_from = self._icon_target = 0.0
-        self._effect_started = time.perf_counter()
-        self.bind("<Configure>", self._paint)
-        self.bind("<Enter>", self._enter)
-        self.bind("<Leave>", self._leave)
-        self.bind("<Unmap>", lambda event: self._cancel_effect())
-        self.bind("<Map>", lambda event: self._start_effect())
+        self._surface = self.create_rectangle(0, 0, 0, 0, width=1)
+        self._bands = [self.create_rectangle(0, 0, 0, 0, outline="") for _ in range(8)] if primary else []
+        self._label = self.create_text(0, 0, font=(theme.mono, 10 if primary else 9, "bold" if primary else "normal"))
+        self._polygons = [self.create_polygon(0, 0, 0, 0, 0, 0, outline="") for _ in range(2)]
+        self._lines = [self.create_line(0, 0, 0, 0, width=1.4) for _ in range(4)]
+        self._arc = self.create_arc(0, 0, 0, 0, style="arc", width=1.4, start=40, extent=280)
+        self._dots = [self.create_oval(0, 0, 0, 0, outline="") for _ in range(3)]
+        self.bind("<Enter>", lambda event: self._hover(True))
+        self.bind("<Leave>", lambda event: self._hover(False))
         self.bind("<ButtonPress-1>", self._press)
         self.bind("<ButtonRelease-1>", self._release)
+        self.bind("<FocusIn>", lambda event: self._focus(True))
+        self.bind("<FocusOut>", lambda event: self._focus(False))
         for key in ("space", "Return"):
             self.bind(f"<KeyPress-{key}>", self._key_press)
             self.bind(f"<KeyRelease-{key}>", self._key_release)
-        self.bind("<FocusIn>", lambda event: self._focus(True))
-        self.bind("<FocusOut>", lambda event: self._focus(False))
-        self.bind("<Destroy>", self._dispose, add="+")
+        self.bind("<Unmap>", lambda event: self.settle())
 
     def configure(self, cnf=None, **kwargs):
         if isinstance(cnf, dict):
             kwargs = {**cnf, **kwargs}
             cnf = None
-        previous_state = self._state
-        custom = False
-        for name in ("text", "state", "command"):
+        changed = False
+        for name in ("text", "state", "command", "selected"):
             if name in kwargs:
                 value = kwargs.pop(name)
-                setattr(self, "command" if name == "command" else f"_{name}", value)
-                custom = True
-        result = super().configure(cnf, **kwargs) if cnf is not None or kwargs or not custom else None
-        if custom and hasattr(self, "theme"):
-            if previous_state != self._state:
+                setattr(self, {"text": "_text", "state": "_state"}.get(name, name), value)
+                changed = True
+        result = super().configure(cnf, **kwargs) if cnf is not None or kwargs or not changed else None
+        if changed:
+            if self._state == "disabled":
                 self._pressed = False
-                super().configure(cursor="arrow" if self._state == "disabled" else "hand2")
-                self._start_effect()
-            else:
-                self._paint()
+            self._animate()
         return result
 
     config = configure
 
     def cget(self, key):
         if key in ("text", "state"):
-            return getattr(self, f"_{key}")
+            return getattr(self, "_" + key)
         return super().cget(key)
 
     def invoke(self):
         if not self._closed and self._state != "disabled":
-            result = self.command()
-            self._start_effect()
-            return result
+            return self.command()
 
     def set_playback(self, state):
         target = 1.0 if state == "running" else 0.0
+        text = {"running": "Pause", "paused": "Resume", "done": "Replay"}.get(state, "Run")
         changed = state != self._playback
-        self._playback = state
-        self._text = {"running": "Pause", "paused": "Resume", "done": "Replay"}.get(state, "Run")
-        if changed or target != self._icon_target:
-            self._icon_from, self._icon_target = self._icon, target
-            self._start_effect()
+        self._playback, self._text, self._icon_target = state, text, target
+        if changed:
+            self._animate()
         else:
-            self._paint()
+            self.paint()
 
-    def refresh_theme(self):
-        super().configure(bg=self.master.cget("bg"))
-        self._surface_cache.clear()
-        self._paint()
+    def _hover(self, value):
+        self._hovered = value
+        self._animate()
 
-    def motion_changed(self):
-        if self.reduced_motion.get():
-            self._cancel_effect()
-            self._press_amount = float(self._pressed)
-            self._icon = self._icon_target
-        else:
-            self._start_effect()
-        self._paint()
-
-    def _enter(self, event):
-        self._hovered = True
-        self._start_effect()
-
-    def _leave(self, event):
-        self._hovered = False
-        self._paint()
+    def _focus(self, value):
+        self._focused = value
+        if not value:
+            self._pressed = False
+        self._animate()
 
     def _press(self, event):
         if self._state != "disabled":
             self.focus_set()
             self._pressed = True
-            self._start_effect()
+            self._animate()
 
     def _release(self, event):
         armed, self._pressed = self._pressed, False
         if armed and 0 <= event.x < self.winfo_width() and 0 <= event.y < self.winfo_height():
             self.invoke()
-        self._start_effect()
+        self._animate()
 
     def _key_press(self, event):
         self._press(event)
@@ -227,164 +104,148 @@ class FrostButton(tk.Canvas):
         armed, self._pressed = self._pressed, False
         if armed:
             self.invoke()
-        self._start_effect()
+        self._animate()
         return "break"
 
-    def _focus(self, focused):
-        self._focused = focused
-        if not focused:
-            self._pressed = False
-        self._start_effect()
-
-    def _start_effect(self):
+    def _animate(self):
         if self._closed:
             return
-        self._cancel_effect()
-        self._icon_from = self._icon
-        self._press_from = self._press_amount
-        self._effect_started = time.perf_counter()
+        start = self._hover_amount, self._press_amount, self._icon
+        target = float(self._hovered or self._focused), float(self._pressed), self._icon_target
+        def update(amount):
+            self._hover_amount, self._press_amount, self._icon = [a + (b - a) * amount for a, b in zip(start, target)]
+            self.paint()
+        self.manager.cancel(self.key + ":control")
         if self.reduced_motion.get() or self._state == "disabled":
-            self._press_amount = float(self._pressed)
-            self._icon = self._icon_target
-            self._paint()
+            update(1)
         else:
-            self._animate_effect()
+            self.manager.tween(self.key + ":control", .12, update)
 
-    def _animate_effect(self):
-        self._effect_id = None
-        if self._closed:
+    def settle(self):
+        self.manager.cancel_prefix(self.key + ":")
+        self._hover_amount = float(self._hovered or self._focused)
+        self._press_amount = float(self._pressed)
+        self._icon = self._icon_target
+        self.paint()
+
+    def motion_changed(self):
+        self.settle()
+
+    def paint(self):
+        if self._closed or not hasattr(self, "_surface"):
             return
-        elapsed = time.perf_counter() - self._effect_started
-        progress = ease(elapsed / .22)
-        self._icon = self._icon_from + (self._icon_target - self._icon_from) * progress
-        self._press_amount = self._press_from + (float(self._pressed) - self._press_from) * progress
-        self._paint()
-        if elapsed < .22 and self.winfo_ismapped():
-            self._effect_id = self.after(16, self._animate_effect)
-
-    def _cancel_effect(self):
-        if self._effect_id is not None:
-            self.after_cancel(self._effect_id)
-            self._effect_id = None
-
-    def _dispose(self, event):
-        if event.widget is self:
-            self._closed = True
-            self._cancel_effect()
-
-    def _paint(self, event=None):
-        if self._closed:
-            return
-        self.delete("all")
         p = self.theme.palette
         w, h = self.winfo_width(), self.winfo_height()
-        if w < 10 or h < 10:
-            return
-        disabled = self._state == "disabled"
-        bg = str(self.cget("bg"))
-        amount = self._press_amount
-        width, height = w - 4 * amount, h - 3 * amount
-        top, bottom = p.GLASS_TOP, p.GLASS_BOTTOM
-        if self._hovered and not disabled:
-            top = blend(top, p.SHINE, .08)
-            bottom = blend(bottom, p.SHINE, .04)
-        if disabled:
-            top, bottom = blend(bg, top, .4), blend(bg, bottom, .4)
-        self._surface = frosted_image(self, width, height, height / 2, top, bottom,
-                                      p.FROST_EDGE, bg, .10 if self.theme.name == "Light" else .24)
-        self.create_image(w / 2, h / 2 + amount, image=self._surface, tags="button-surface")
-        if self._focused:
-            rounded_panel(self, 3, 3, w - 3, h - 3, h / 2 - 3, fill="",
-                          outline=p.SLIDER_FILL, width=2, tags="focus-ring")
-        color = p.MUTED if disabled else p.TEXT
-        label_width = self._label_font.measure(self._text)
-        left = (w - label_width - 32) / 2
-        cx, cy = left + 10, h / 2 - 1 + amount
-        self._glyph = playback_glyph(self, self._icon, color)
-        self.create_image(cx, cy, image=self._glyph, tags="playback-icon")
-        self.create_text(left + 32, cy, text=self._text, anchor="w", fill=color,
-                         font=self._label_font, tags="playback-label")
+        inset = 2 + self._press_amount * 2
+        bg = getattr(p, self.bg_role)
+        fill = lerp_color(p.ACCENT, p.TEXT, self._hover_amount * .1) if self.primary else bg
+        fill = lerp_color(fill, p.BG, self._press_amount * .2)
+        color = p.ON_ACCENT if self.primary else lerp_color(p.TEXT, p.ACCENT, self._hover_amount)
+        border = p.ACCENT if self.primary or self.selected else lerp_color(p.BORDER, p.ACCENT, self._hover_amount)
+        if self._state == "disabled":
+            color, border, fill = p.MUTED, p.BORDER, bg
+        if self.selected:
+            color = p.ACCENT
+        self.position(self._surface, inset, inset, w - inset, h - inset)
+        self.style(self._surface, fill=fill, outline=border, width=2 if self._focused else 1)
+        for band, item in enumerate(self._bands):
+            top, bottom = inset + 1, h - inset - 1
+            self.position(item, inset + 1, top + (bottom - top) * band / 8,
+                          w - inset - 1, top + (bottom - top) * (band + 1) / 8)
+            shade = lerp_color(p.BUTTON_TOP, p.BUTTON_BASE, band / 7)
+            shade = lerp_color(shade, p.TEXT, self._hover_amount * .1)
+            shade = lerp_color(shade, p.BG, self._press_amount * .2)
+            self.style(item, fill=shade if self._state != "disabled" else bg)
+        self.position(self._label, w / 2 + (10 if self.icon else 0), h / 2 + self._press_amount)
+        self.style(self._label, text=self._text.upper(), fill=color)
+        for item in self._polygons + self._lines + [self._arc] + self._dots:
+            self.style(item, state="hidden")
+        x, y = 20, h / 2 + self._press_amount
+        if self.icon in ("play", "step"):
+            play = ((-4, -6, 1, -3, 1, 3, -4, 6), (1, -3, 7, 0, 7, 0, 1, 3))
+            pause = ((-5, -6, -2, -6, -2, 6, -5, 6), (3, -6, 6, -6, 6, 6, 3, 6))
+            amount = self._icon if self.icon == "play" else 0
+            for item, start, end in zip(self._polygons, play, pause):
+                points = [a + (b - a) * amount + (x if i % 2 == 0 else y) for i, (a, b) in enumerate(zip(start, end))]
+                self.position(item, *points)
+                self.style(item, fill=color, state="normal")
+            if self.icon == "step":
+                self.position(self._lines[0], x + 9, y - 6, x + 9, y + 6)
+                self.style(self._lines[0], fill=color, state="normal")
+        elif self.icon == "stop":
+            self.position(self._polygons[0], x - 5, y - 5, x + 5, y - 5, x + 5, y + 5, x - 5, y + 5)
+            self.style(self._polygons[0], fill=color, state="normal")
+        elif self.icon in ("reset", "generate"):
+            self.position(self._arc, x - 6, y - 6, x + 6, y + 6)
+            self.style(self._arc, outline=color, state="normal")
+            self.position(self._polygons[0], x + 5, y - 7, x + 7, y - 1, x + 1, y - 4)
+            self.style(self._polygons[0], fill=color, state="normal")
+        elif self.icon == "toggle":
+            self.position(self._polygons[0], x - 5, y - 5, x + 5, y - 5, x + 5, y + 5, x - 5, y + 5)
+            self.style(self._polygons[0], fill=color if self.selected else "", outline=color, state="normal")
+        elif self.icon == "guide":
+            self.position(self._lines[0], x - 5, y - 6, x + 5, y - 6, x + 5, y + 6, x - 5, y + 6, x - 5, y - 6)
+            self.position(self._lines[1], x - 2, y - 2, x + 2, y - 2)
+            self.position(self._lines[2], x - 2, y + 2, x + 2, y + 2)
+            for item in self._lines[:3]:
+                self.style(item, fill=color, state="normal")
 
 
-class MotionToggle(FrostButton):
-    """A focusable glass pill for the reduced-motion setting."""
+class MotionToggle(AnimatedButton):
+    def __init__(self, parent, theme, manager, variable, command):
+        self.variable, self.on_change = variable, command
+        super().__init__(parent, theme, manager, variable, self._toggle, text="Reduced motion", icon="toggle", width=180, height=36)
+        self.selected = variable.get()
+        self._trace = variable.trace_add("write", self._changed)
 
-    def __init__(self, parent, theme, variable, command):
-        self.variable = variable
-        self.on_change = command
-        super().__init__(parent, theme, self._toggle, variable, width=188, height=34)
-        self._icon = self._icon_target = float(variable.get())
-        self._trace = variable.trace_add("write", self._variable_changed)
+    def _changed(self, *args):
+        self.selected = self.variable.get()
+        self._animate()
 
-    def _variable_changed(self, *args):
-        self._icon_target = float(self.variable.get())
-        self._start_effect()
+    def _toggle(self):
+        self.variable.set(not self.variable.get())
+        self.on_change()
 
     def _dispose(self, event):
         if event.widget is self:
             self.variable.trace_remove("write", self._trace)
         super()._dispose(event)
 
-    def _toggle(self):
-        self.variable.set(not self.variable.get())
-        self.on_change()
 
-    def _paint(self, event=None):
-        if self._closed:
-            return
-        self.delete("all")
-        p = self.theme.palette
-        w, h = self.winfo_width(), self.winfo_height()
-        if w < 10 or h < 10:
-            return
-        on = self.variable.get()
-        rounded_panel(self, 2, 2, w - 2, h - 2, 12, fill=p.SELECT if on else p.INSET,
-                      outline=p.ACCENT if self._focused or self._hovered else p.BORDER)
-        self.create_text(13, h / 2, text="Reduced motion", anchor="w",
-                         fill=p.TEXT, font=(self.theme.font, 9))
-        x = w - 47
-        rounded_panel(self, x, 9, x + 32, h - 9, 8,
-                      fill=p.ACCENT if on else p.BORDER, outline="")
-        center = x + 8 + 16 * self._icon
-        self.create_oval(center - 5, h / 2 - 5, center + 5, h / 2 + 5,
-                         fill=p.ON_ACCENT if on else p.TEXT, outline="")
-
-
-class FrostSlider(tk.Canvas):
-    def __init__(self, parent, theme, variable, command, reduced_motion,
-                 from_=0, to=100, length=176, step=1):
-        super().__init__(parent, width=length, height=36, bg=parent.cget("bg"),
-                         highlightthickness=0, bd=0, takefocus=True, cursor="hand2")
-        self.theme = theme
-        self.variable = variable
-        self.command = command
-        self.reduced_motion = reduced_motion
+class InstrumentSlider(RetainedCanvas):
+    def __init__(self, parent, theme, manager, variable, command, reduced_motion,
+                 from_=0, to=100, length=170, step=1, role="BG"):
+        super().__init__(parent, theme, manager, role=role, width=length, height=32, takefocus=True, cursor="hand2")
+        self.variable, self.command, self.reduced_motion = variable, command, reduced_motion
         self.minimum, self.maximum, self.step = float(from_), float(to), float(step)
-        if self.maximum <= self.minimum or self.step <= 0:
-            raise ValueError("Slider bounds must increase and its step must be positive.")
         self._state = "normal"
-        self._closed = self._syncing = False
-        self._dragging = self._hovered = self._focused = False
-        self._drag_offset = 0.0
-        self._effect_id = None
-        self._expansion = self._expansion_from = self._expansion_target = 0.0
-        self._surface_cache = {}
+        self._dragging = self._focused = self._hovered = self._syncing = False
         self._last_value = None
-        self._trace = variable.trace_add("write", self._variable_changed)
-        self.bind("<Configure>", self._paint)
-        self.bind("<Enter>", lambda event: self._hover(True))
-        self.bind("<Leave>", lambda event: self._hover(False))
-        self.bind("<FocusIn>", lambda event: self._focus(True))
-        self.bind("<FocusOut>", lambda event: self._focus(False))
+        self.visual = 0.0
+        self._handle_amount = 0.0
+        self._drag_offset = 0
+        self._track = self.create_line(0, 0, 0, 0, width=1)
+        self._fill = self.create_line(0, 0, 0, 0, width=2)
+        self._ticks = [self.create_line(0, 0, 0, 0) for _ in range(11)]
+        self._thumb_shadow = self.create_line(0, 0, 0, 0, width=14, capstyle="round")
+        self._thumb_rim = self.create_line(0, 0, 0, 0, width=14, capstyle="round")
+        self._thumb = self.create_line(0, 0, 0, 0, width=12, capstyle="round")
+        self._thumb_grip = self.create_line(0, 0, 0, 0, width=1)
+        self._focus_ring = self.create_rectangle(0, 0, 0, 0, fill="", state="hidden")
+        self._trace = variable.trace_add("write", self._changed)
         self.bind("<ButtonPress-1>", self._press)
         self.bind("<B1-Motion>", self._drag)
         self.bind("<ButtonRelease-1>", self._release)
-        self.bind("<Unmap>", self._unmap)
-        self.bind("<Destroy>", self._dispose)
+        self.bind("<FocusIn>", lambda event: self._focus(True))
+        self.bind("<FocusOut>", lambda event: self._focus(False))
+        self.bind("<Unmap>", lambda event: self._unmap())
+        self.bind("<Enter>", lambda event: self._hover(True))
+        self.bind("<Leave>", lambda event: self._hover(False))
         for key in ("Left", "Right", "Up", "Down", "Home", "End", "Prior", "Next"):
             self.bind(f"<KeyPress-{key}>", self._key)
         self.bind("<KeyPress-space>", lambda event: "break")
-        self._variable_changed()
+        self._changed()
+        self.visual = self.get()
 
     def configure(self, cnf=None, **kwargs):
         if isinstance(cnf, dict):
@@ -394,45 +255,35 @@ class FrostSlider(tk.Canvas):
         if state is not None:
             self._state = state
             if state == "disabled":
-                self._end_drag()
-                self._hovered = False
-                self._cancel_effect()
-                self._expansion = 0.0
-            super().configure(cursor="arrow" if state == "disabled" else "hand2")
+                self._unmap()
         result = super().configure(cnf, **kwargs) if cnf is not None or kwargs or state is None else None
         if state is not None:
-            self._paint()
+            self.paint()
         return result
 
     config = configure
 
     def cget(self, key):
-        if key == "state":
-            return self._state
-        return super().cget(key)
+        return self._state if key == "state" else super().cget(key)
 
     def get(self):
         return self._last_value
 
     def set(self, value):
-        if not self._closed:
-            self.variable.set(value)
+        self.variable.set(value)
 
-    def _variable_changed(self, *args):
+    def _changed(self, *args):
         if self._closed or self._syncing:
             return
         invalid = False
         try:
             raw = float(self.variable.get())
             if not math.isfinite(raw):
-                invalid = True
-                raw = self.minimum
+                invalid, raw = True, self.minimum
         except (ValueError, tk.TclError):
-            invalid = True
-            raw = self.minimum
-        value = self.minimum + round((raw - self.minimum) / self.step) * self.step
-        value = max(self.minimum, min(self.maximum, value))
-        if invalid or raw != value:
+            invalid, raw = True, self.minimum
+        value = max(self.minimum, min(self.maximum, self.minimum + round((raw - self.minimum) / self.step) * self.step))
+        if invalid or value != raw:
             self._syncing = True
             try:
                 self.variable.set(value)
@@ -440,31 +291,35 @@ class FrostSlider(tk.Canvas):
                 self._syncing = False
         changed = value != self._last_value
         self._last_value = value
-        self._paint()
+        start = self.visual
+        def update(amount):
+            self.visual = start + (value - start) * amount
+            self.paint()
+        if self.reduced_motion.get() or not self.winfo_ismapped():
+            self.manager.cancel(self.key + ":thumb")
+            update(1)
+        else:
+            self.manager.tween(self.key + ":thumb", .11, update)
         if changed and self.command is not None:
             self.command(str(value))
 
     def _geometry(self):
-        width = max(44, self.winfo_width())
-        left, right = 22, width - 22
-        fraction = (self.get() - self.minimum) / (self.maximum - self.minimum)
-        return left, right, left + fraction * (right - left)
+        left, right = 12, max(13, self.winfo_width() - 12)
+        return left, right, left + (right - left) * (self.visual - self.minimum) / (self.maximum - self.minimum)
 
     def _set_position(self, x):
         left, right, _ = self._geometry()
-        fraction = max(0, min(1, (x - left) / max(1, right - left)))
-        self.set(self.minimum + fraction * (self.maximum - self.minimum))
+        self.set(self.minimum + max(0, min(1, (x - left) / (right - left))) * (self.maximum - self.minimum))
 
     def _press(self, event):
-        if self._state == "disabled":
-            return "break"
-        self.focus_set()
-        _, _, center = self._geometry()
-        self._drag_offset = event.x - center if abs(event.x - center) <= 18 else 0
-        self._dragging = True
-        self.grab_set()
-        self._set_position(event.x - self._drag_offset)
-        self._start_effect()
+        if self._state != "disabled":
+            self.focus_set()
+            _, _, center = self._geometry()
+            self._drag_offset = event.x - center if abs(event.x - center) < 10 else 0
+            self._dragging = True
+            self.grab_set()
+            self._set_position(event.x - self._drag_offset)
+            self._animate_handle()
         return "break"
 
     def _drag(self, event):
@@ -472,113 +327,254 @@ class FrostSlider(tk.Canvas):
             self._set_position(event.x - self._drag_offset)
         return "break"
 
-    def _end_drag(self):
-        self._dragging = False
-        if self.grab_current() is self:
-            self.grab_release()
-
     def _release(self, event):
         if self._dragging:
             self._drag(event)
             self._end_drag()
-            self._hovered = 0 <= event.x < self.winfo_width() and 0 <= event.y < self.winfo_height()
-            self._start_effect()
         return "break"
+
+    def _end_drag(self):
+        self._dragging = False
+        if self.grab_current() is self:
+            self.grab_release()
+        self._animate_handle()
+
+    def _focus(self, value):
+        self._focused = value
+        if not value:
+            self._end_drag()
+        self._animate_handle()
+
+    def _hover(self, value):
+        self._hovered = value
+        self._animate_handle()
+
+    def _animate_handle(self):
+        if self._closed:
+            return
+        start = self._handle_amount
+        target = float(self._focused or self._hovered or self._dragging)
+        def update(amount):
+            self._handle_amount = start + (target - start) * amount
+            self.paint()
+        self.manager.cancel(self.key + ":handle")
+        if self.reduced_motion.get() or not self.winfo_ismapped():
+            update(1)
+        else:
+            self.manager.tween(self.key + ":handle", .12, update)
 
     def _key(self, event):
         if self._state != "disabled":
-            key = event.keysym
-            if key in ("Home", "End"):
-                self.set(self.minimum if key == "Home" else self.maximum)
+            if event.keysym in ("Home", "End"):
+                self.set(self.minimum if event.keysym == "Home" else self.maximum)
             else:
-                increment = self.step * (10 if key in ("Prior", "Next") else 1)
-                direction = -1 if key in ("Left", "Down", "Next") else 1
-                self.set(self.get() + direction * increment)
+                sign = -1 if event.keysym in ("Left", "Down", "Next") else 1
+                self.set(self.get() + sign * self.step * (10 if event.keysym in ("Prior", "Next") else 1))
         return "break"
 
-    def _hover(self, hovered):
-        self._hovered = hovered
-        self._start_effect()
-
-    def _focus(self, focused):
-        self._focused = focused
-        if not focused:
-            self._end_drag()
-        self._start_effect()
-
-    def refresh_theme(self):
-        super().configure(bg=self.master.cget("bg"))
-        self._surface_cache.clear()
-        self._paint()
+    def _unmap(self):
+        self._end_drag()
+        self.motion_changed()
 
     def motion_changed(self):
-        self._start_effect()
-
-    def _start_effect(self):
-        if self._closed:
-            return
-        self._cancel_effect()
-        self._expansion_target = float((self._hovered or self._dragging) and self._state != "disabled")
-        self._expansion_from = self._expansion
-        self._effect_started = time.perf_counter()
-        if self.reduced_motion.get() or self._state == "disabled":
-            self._expansion = self._expansion_target
-            self._paint()
-        else:
-            self._animate_effect()
-
-    def _animate_effect(self):
-        self._effect_id = None
-        if self._closed:
-            return
-        elapsed = time.perf_counter() - self._effect_started
-        self._expansion = self._expansion_from + (self._expansion_target - self._expansion_from) * ease(elapsed / .16)
-        self._paint()
-        if elapsed < .16 and self.winfo_ismapped():
-            self._effect_id = self.after(16, self._animate_effect)
-
-    def _cancel_effect(self):
-        if self._effect_id is not None:
-            self.after_cancel(self._effect_id)
-            self._effect_id = None
-
-    def _unmap(self, event):
-        self._end_drag()
-        self._hovered = False
-        self._cancel_effect()
-        self._expansion = 0.0
+        self.manager.cancel_prefix(self.key + ":")
+        self.visual = self.get()
+        self._handle_amount = float(self._focused or self._hovered or self._dragging)
+        self.paint()
 
     def _dispose(self, event):
         if event.widget is self:
-            self._closed = True
-            self._cancel_effect()
             self.variable.trace_remove("write", self._trace)
+        super()._dispose(event)
 
-    def _paint(self, event=None):
-        if self._closed or self._last_value is None:
-            return
-        self.delete("all")
-        w, h = self.winfo_width(), self.winfo_height()
-        if w < 44 or h < 10:
+    def paint(self):
+        if self._closed or not hasattr(self, "_thumb") or self._last_value is None:
             return
         p = self.theme.palette
-        bg = str(self.cget("bg"))
         left, right, center = self._geometry()
-        cy = h / 2
-        disabled = self._state == "disabled"
-        fill = blend(p.SLIDER_TRACK, p.SLIDER_FILL, .25) if disabled else p.SLIDER_FILL
-        self.create_line(left, cy, right, cy, fill=p.SLIDER_TRACK, width=7,
-                         capstyle=tk.ROUND, tags="slider-track")
-        if center > left:
-            self.create_line(left, cy, center, cy, fill=fill, width=7,
-                             capstyle=tk.ROUND, tags="slider-fill")
-        knob_width = 40 + 4 * self._expansion
-        knob_height = 32 + 2 * self._expansion
-        top = blend(bg, "#ffffff", .45) if disabled else "#ffffff"
-        bottom = blend(bg, p.THUMB_BOTTOM, .45) if disabled else p.THUMB_BOTTOM
-        self._thumb = frosted_image(self, knob_width, knob_height, 14, top, bottom,
-                                    "#ffffff" if not disabled else p.FROST_EDGE, bg, .27)
-        self.create_image(center, cy, image=self._thumb, tags="slider-thumb")
-        if self._focused:
-            rounded_panel(self, 3, 3, w - 3, h - 3, h / 2 - 3, fill="",
-                          outline=p.SLIDER_FILL, width=1, tags="focus-ring")
+        cy = 13
+        color = p.MUTED if self._state == "disabled" else p.ACCENT
+        self.position(self._track, left, cy, right, cy)
+        self.style(self._track, fill=p.BORDER)
+        self.position(self._fill, left, cy, center, cy)
+        self.style(self._fill, fill=color)
+        for index, item in enumerate(self._ticks):
+            xx = left + (right - left) * index / 10
+            self.position(item, xx, 22, xx, 26 if index % 5 == 0 else 24)
+            self.style(item, fill=p.MUTED if index % 5 == 0 else p.BORDER)
+        self.position(self._thumb_shadow, center - 3, cy + 2, center + 3, cy + 2)
+        self.style(self._thumb_shadow, fill=lerp_color(getattr(p, self.bg_role), p.BORDER, .5))
+        self.position(self._thumb_rim, center - 3, cy, center + 3, cy)
+        self.style(self._thumb_rim, fill=lerp_color(p.BORDER, color, .2 + self._handle_amount * .8),
+                   width=14 + self._handle_amount)
+        self.position(self._thumb, center - 3, cy, center + 3, cy)
+        self.style(self._thumb, fill=lerp_color(p.THUMB, color, self._handle_amount * .1)
+                   if self._state != "disabled" else lerp_color(p.THUMB, p.PANEL, .5))
+        self.position(self._thumb_grip, center, cy - 2, center, cy + 2)
+        self.style(self._thumb_grip, fill=lerp_color(p.MUTED, p.ACCENT, self._handle_amount * .4))
+        self.position(self._focus_ring, 2, 2, self.winfo_width() - 2, 30)
+        self.style(self._focus_ring, outline=p.BORDER, state="normal" if self._focused else "hidden")
+
+
+class InstrumentEntry(tk.Entry):
+    def __init__(self, parent, theme, manager, reduced_motion, **kwargs):
+        super().__init__(parent, relief="flat", bd=0, highlightthickness=1, font=(theme.mono, 10), **kwargs)
+        self.theme, self.manager, self.reduced_motion = theme, manager, reduced_motion
+        self.key = f"entry:{self}"
+        self._focus_amount = 0.0
+        self._focused = False
+        theme.bind(self, bg="INSET", fg="TEXT", insertbackground="ACCENT", disabledbackground="INSET",
+                   disabledforeground="MUTED", selectbackground="BORDER", selectforeground="TEXT")
+        theme.register(self)
+        self.bind("<FocusIn>", lambda event: self._focus(True))
+        self.bind("<FocusOut>", lambda event: self._focus(False))
+        self.bind("<Destroy>", lambda event: manager.cancel(self.key))
+        self.refresh_theme()
+
+    def _focus(self, value):
+        self._focused = value
+        start = self._focus_amount
+        def update(amount):
+            self._focus_amount = start + (float(value) - start) * amount
+            self.refresh_theme()
+        if self.reduced_motion.get():
+            self.manager.cancel(self.key)
+            update(1)
+        else:
+            self.manager.tween(self.key, .12, update)
+
+    def refresh_theme(self):
+        p = self.theme.palette
+        color = lerp_color(p.BORDER, p.ACCENT, self._focus_amount)
+        self.configure(highlightbackground=color, highlightcolor=color)
+
+
+class InstrumentSelect(AnimatedButton):
+    def __init__(self, parent, theme, manager, reduced_motion, variable, values, width=160, labels=None, role="BG"):
+        self.variable, self.values = variable, tuple(values)
+        self.labels = labels or {}
+        self.popup = None
+        self._popup_canvas = None
+        super().__init__(parent, theme, manager, reduced_motion, self._open, width=width, height=34, role=role)
+        self._chevron = self.create_line(0, 0, 0, 0, 0, 0, width=1)
+        self._trace = variable.trace_add("write", self._value_changed)
+        self.bind("<KeyPress-Down>", self._open_key)
+        self.bind("<KeyPress-Up>", self._open_key)
+        self.bind("<KeyRelease-space>", self._select_release)
+        self.bind("<KeyRelease-Return>", self._select_release)
+        self._value_changed()
+
+    def _select_release(self, event):
+        return self._key_release(event)
+
+    def _value_changed(self, *args):
+        self._text = self.labels.get(self.variable.get(), self.variable.get())
+        self.paint()
+
+    def get(self):
+        return self.variable.get()
+
+    def set(self, value):
+        self.variable.set(value)
+
+    def _open_key(self, event):
+        self._open()
+        return "break"
+
+    def _open(self):
+        if self._state == "disabled":
+            return
+        if self.popup is not None:
+            self._close_popup()
+            return
+        root = self.winfo_toplevel()
+        previous = getattr(root, "_instrument_select", None)
+        if previous is not None and previous is not self:
+            previous._close_popup()
+        root._instrument_select = self
+        self.popup = tk.Toplevel(root)
+        self.popup.overrideredirect(True)
+        self.popup.transient(root)
+        w, h = max(self.winfo_width(), 164), len(self.values) * 32 + 4
+        x = min(self.winfo_rootx(), self.winfo_screenwidth() - w)
+        y = self.winfo_rooty() + self.winfo_height()
+        if y + h > self.winfo_screenheight():
+            y = self.winfo_rooty() - h
+        self.popup.geometry(f"{w}x{h}+{max(0, x)}+{max(0, y)}")
+        canvas = RetainedCanvas(self.popup, self.theme, self.manager, role="INSET", width=w, height=h, takefocus=True)
+        canvas.pack(fill="both", expand=True)
+        self._popup_canvas = canvas
+        self._choice = self.values.index(self.variable.get()) if self.variable.get() in self.values else 0
+        self._popup_border = canvas.create_rectangle(1, 1, w - 1, h - 1, fill="", width=1)
+        self._popup_mark = canvas.create_line(4, 0, 4, 0, width=2)
+        self._popup_text = [canvas.create_text(16, 18 + i * 32, anchor="w", font=(self.theme.mono, 9)) for i in range(len(self.values))]
+        canvas.paint = self._paint_popup
+        self._paint_popup()
+        canvas.bind("<Motion>", self._popup_hover)
+        canvas.bind("<ButtonPress-1>", self._popup_click)
+        canvas.bind("<KeyPress-Up>", lambda event: self._popup_key(-1))
+        canvas.bind("<KeyPress-Down>", lambda event: self._popup_key(1))
+        canvas.bind("<KeyPress-Return>", lambda event: self._choose())
+        canvas.bind("<KeyPress-space>", lambda event: self._choose())
+        canvas.bind("<KeyPress-Escape>", lambda event: self._close_popup())
+        canvas.bind("<KeyPress-Tab>", lambda event: self._close_popup())
+        canvas.grab_set()
+        canvas.focus_force()
+
+    def _paint_popup(self):
+        if self.popup is None:
+            return
+        c, p = self._popup_canvas, self.theme.palette
+        c.style(self._popup_border, outline=p.BORDER)
+        c.position(self._popup_mark, 4, self._choice * 32 + 8, 4, self._choice * 32 + 27)
+        c.style(self._popup_mark, fill=p.ACCENT)
+        for index, (item, value) in enumerate(zip(self._popup_text, self.values)):
+            c.style(item, text=self.labels.get(value, value).upper(), fill=p.ACCENT if index == self._choice else p.TEXT)
+
+    def _popup_key(self, direction):
+        self._choice = max(0, min(len(self.values) - 1, self._choice + direction))
+        self._paint_popup()
+        return "break"
+
+    def _popup_hover(self, event):
+        row = int(event.y // 32)
+        if 0 <= row < len(self.values):
+            self._choice = row
+            self._paint_popup()
+
+    def _popup_click(self, event):
+        if not 0 <= event.x < self._popup_canvas.winfo_width() or not 0 <= event.y < self._popup_canvas.winfo_height():
+            return self._close_popup()
+        self._choice = min(len(self.values) - 1, max(0, int(event.y // 32)))
+        return self._choose()
+
+    def _choose(self):
+        value = self.values[self._choice]
+        self._close_popup()
+        self.variable.set(value)
+        self.event_generate("<<ComboboxSelected>>")
+        return "break"
+
+    def _close_popup(self):
+        if self.popup is not None:
+            self._popup_canvas.grab_release()
+            self.popup.destroy()
+            self.popup = self._popup_canvas = None
+            if not self._closed and self.winfo_exists():
+                self.focus_set()
+        return "break"
+
+    def _dispose(self, event):
+        if event.widget is self:
+            self._close_popup()
+            self.variable.trace_remove("write", self._trace)
+        super()._dispose(event)
+
+    def paint(self):
+        super().paint()
+        if self._closed or not hasattr(self, "_chevron"):
+            return
+        w, h = self.winfo_width(), self.winfo_height()
+        self.position(self._label, (w - 16) / 2, h / 2)
+        self.position(self._chevron, w - 19, h / 2 - 2, w - 15, h / 2 + 2, w - 11, h / 2 - 2)
+        self.style(self._chevron, fill=self.theme.palette.MUTED)
