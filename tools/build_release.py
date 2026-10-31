@@ -13,7 +13,7 @@ import symtable
 
 ROOT = Path(__file__).resolve().parents[1]
 # Dependencies precede their consumers; PROJECT.py supplies the entry point.
-MODULES = ("algorithms", "datasets", "motion", "theme", "widgets", "PROJECT")
+MODULES = ("algorithms", "datasets", "motion", "theme", "canvas_items", "scope", "panels", "widgets", "PROJECT")
 
 
 def version_number(value):
