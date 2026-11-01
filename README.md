@@ -9,15 +9,15 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 <img alt="Python 3.10 or newer" src="https://img.shields.io/badge/Python-3.10%2B-56e0bf?style=for-the-badge&logo=python&logoColor=0a101c" />
 <img alt="13 algorithms" src="https://img.shields.io/badge/13-ALGORITHMS-b09aff?style=for-the-badge" />
-<img alt="Light, Dark, and System themes" src="https://img.shields.io/badge/THEMES-LIGHT_%C2%B7_DARK_%C2%B7_AUTO-75a8e8?style=for-the-badge" />
+<img alt="Five palettes and automatic System mode" src="https://img.shields.io/badge/THEMES-5_PALETTES_%2B_AUTO-AC487D?style=for-the-badge" />
 
 [🎮 Press play](#press-play) · [🧠 Meet the algorithms](#the-lineup) · [🎛️ Take control](#the-controls) · [🧪 Try a challenge](#challenge-mode)
 
 </div>
 
-![Live Algo Studio demo showing frosted playback controls, rounded sliders, and sorting and searching in dark and light themes](docs/demo.gif)
+![Live Algo Studio v3 demo showing the oscilloscope console, five palettes, sorting and searching](docs/demo.gif)
 
-<p align="center"><sub>🎬 Actual app footage. Sorting, searching, and playback controls in Dark and Light themes.</sub></p>
+<p align="center"><sub>🎬 Actual app footage. Five palettes, animated signal columns, and sorting and searching in motion.</sub></p>
 
 ---
 
@@ -26,30 +26,32 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 | Playback | Inspection | Customization |
 | :--- | :--- | :--- |
 | Animated swaps, value writes, and completion highlights make each operation visible. | Track comparisons, array writes, highlighted pseudocode, and an explanation of every step. | Enter custom arrays, choose from four presets, adjust playback speed, and set search targets. |
-| Pause, resume, or advance one step at a time. | Hover over a bar to inspect its index and value. | Light, Dark, and System themes, with optional Reduced motion. |
+| Pause, resume, or advance one step at a time. | Hover over a bar to inspect its index and value. | Five palettes and automatic System mode, with optional Reduced motion. |
 
 Stopping a run restores the original array. Negative integers, zeros, and duplicate values are supported.
 
-> **[v2.1.3 · Frost](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v2.1.3)** introduces rounded playback controls, softly shaded surfaces, and sliders with precise mouse and keyboard input.
+> **[v3.0.0 · In Full Color](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v3.0.0)** — a new console, five palettes, and a theme that remembers you. [Short changelog →](docs/releases/v3.0.0.md)
 
 <details>
 <summary><strong>🌓 Appearance and accessibility</strong></summary>
 
 <br>
 
-| Light | Dark | System |
-| :--- | :--- | :--- |
-| Pale surfaces, dark text, and clear accent colors. | Dark panels with restrained highlights. | Follows Windows' app color preference, including changes while the app is open. |
+| Palette | Character |
+| :--- | :--- |
+| **[Phosphor](docs/phosphor.png)** | Warm black, amber signal columns, coral comparisons, cyan pivots. |
+| **[Paper](docs/paper.png)** | Cream surfaces, deep ink columns, and amber controls. |
+| **[Red](docs/red.png)** | Scarlet gradients fading into wine. |
+| **[Maroon](docs/maroon.png)** | Rose gradients fading into mulberry. |
+| **[Purple](docs/purple.png)** | Mauve gradients fading into aubergine. |
 
-Choose **System / Light / Dark** beside the title. Windows changes are detected within about two seconds. On other systems, or when the preference cannot be read, System uses Dark. Switching themes preserves playback, input, focus, and open guides.
+Choose a palette or **System** beside the title. Your choice is saved automatically for the next launch. System follows Windows' app color preference, including changes while the app is open; elsewhere it uses Phosphor. Switching palettes preserves playback, input, and open guides.
 
-The **Run / Pause / Resume / Replay** button uses a rounded frosted surface, a clear icon, and a subtle press transition. The **animation speed** and **array size** sliders use rounded tracks and raised capsule handles. Click a track, drag a handle, or use the keyboard for precise adjustment.
+Only the theme choice is saved, in your account's `AlgoStudio/preferences.json`: under `%APPDATA%` on Windows, `~/Library/Application Support` on macOS, or `$XDG_CONFIG_HOME` / `~/.config` on Linux. Missing or unreadable settings fall back to System. No input arrays are saved.
 
-Focused controls have a visible outline. **Reduced motion** disables decorative transitions while preserving playback and single-step inspection. Button and slider effects settle after interaction rather than animating continuously.
+The footer links back to the project through **Made by Radsharkboy**. The Run button has a drawn play/pause icon. Sliders have rounded handles and support dragging, track clicks, and keyboard adjustment. Focused controls have a visible outline. **Reduced motion** removes spatial and decorative movement while retaining a brief color fade and every algorithm step.
 
-**Native fonts:** Segoe UI Variable / Segoe UI on Windows, SF Pro Text / Helvetica Neue when available on macOS, and Noto Sans / DejaVu Sans elsewhere. Code and values use installed fonts such as Cascadia, Consolas, or Menlo, with system fallbacks. No font downloads are required.
-
-<sub>Frosted shading and rounded controls are rendered in Tkinter using the Python standard library.</sub>
+**Installed fonts:** the display title uses Georgia, Cambria, Palatino, or an installed serif fallback. Labels, values, code, and counters use Consolas, Menlo, DejaVu Sans Mono, or a system monospace fallback. No font downloads, runtime images, or pip packages are needed.
 
 </details>
 
@@ -58,6 +60,10 @@ Focused controls have a visible outline. **Reduced motion** disables decorative 
 ## 🎮 Getting started
 
 Requires **Python 3.10+**, **Tkinter**, and a graphical desktop. No pip dependencies are required.
+
+**Download [Algo-Studio-v3.0.0.py](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/download/v3.0.0/Algo-Studio-v3.0.0.py)** and run `py Algo-Studio-v3.0.0.py` on Windows or `python3 Algo-Studio-v3.0.0.py` on macOS/Linux. The single file includes the whole app. [SHA-256 checksums](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/download/v3.0.0/SHA256SUMS) are provided with the release.
+
+Or run the source checkout:
 
 ```bash
 git clone https://github.com/Rad-Sharkboy/Algorithm-Visualizer.git
@@ -144,8 +150,8 @@ On Windows, use `py PROJECT.py`. To check whether Tkinter is available, run `pyt
 | ✍️ **Apply** | Use your own comma- or space-separated integers. |
 | 🏎️ **Animation speed** | Adjust playback speed, including while an algorithm is running. |
 | **Array size** | Choose 8–64 values for the next generated array, then press Generate. |
-| 🌙 **Reduced motion** | Disable decorative transitions while retaining every algorithm step. |
-| 🌓 **Theme** | Choose Light, Dark, or the Windows-following System mode without interrupting playback. |
+| 🌙 **Reduced motion** | Remove spatial movement while retaining color fades and every algorithm step. |
+| 🌓 **Theme** | Choose one of five palettes or System; your selection is remembered. |
 | 📖 **Algorithm guide** | Open the explanation, pseudocode, and complexity. |
 
 **Input limits:** generated arrays have **8–64 values**. Custom arrays accept **1–64 integers from −999 to 999**. Hover over any bar for its index and exact value.
@@ -161,7 +167,7 @@ On Windows, use `py PROJECT.py`. To check whether Tkinter is available, run `pyt
 | <kbd>→</kbd> | Next step |
 | <kbd>Esc</kbd> | Stop |
 | <kbd>Ctrl</kbd> + <kbd>R</kbd> | Reset |
-| <kbd>Enter</kbd> in **Your Data** | Apply the array |
+| <kbd>Enter</kbd> in **Values** | Apply the array |
 | <kbd>Enter</kbd> in **Target** | Run the search |
 
 Typing and cursor movement work normally in input fields. Focused buttons support Space and Enter. A focused slider uses arrow keys for one-unit adjustments, Page Up / Page Down for ten units, and Home / End for its limits; these keys do not advance the algorithm.
@@ -173,13 +179,15 @@ Typing and cursor movement work normally in input fields. Focused buttons suppor
 
 <br>
 
-| Color | Meaning |
+| Role | Meaning |
 | :--- | :--- |
-| 🩵 Teal | Unvisited |
-| 💜 Purple | Being compared or written |
-| 💛 Amber | Pivot or search boundary |
-| 💚 Green | Settled value or search match |
-| 🩶 Muted gray | Eliminated search position |
+| **Signal** | Unvisited values; the main column gradient of the selected palette. |
+| **Compare** | Values being compared or written; a contrasting warm highlight. |
+| **Pivot** | Pivot or search boundary; cyan in Phosphor/Paper, lavender or rose in the other palettes. |
+| **Settled** | A finished position or search match; a green highlight. |
+| **Muted** | Eliminated search positions. |
+
+The legend below the scope shows the exact colors for the current palette.
 
 Each step includes a text description. Search results and sort completion are reported explicitly.
 
@@ -209,21 +217,27 @@ Each step includes a text description. Search results and sort completion are re
 
 ```text
 Algo Studio
-├── PROJECT.py          🎛️ Interface + animation controller
-├── algorithms.py       🧠 13 incremental algorithms
-├── motion.py           Easing, colors + swap trajectories
-├── datasets.py         🎲 Presets + input validation
-├── theme.py            🎨 Palette, fonts + widget styling
-├── docs/               🎬 The actual app demo
-├── widgets.py          Frosted controls + sliders
-└── tools/record_demo.py 📹 Demo recorder
+├── PROJECT.py                    Interface + playback controller
+├── algorithms.py                 13 incremental algorithms
+├── datasets.py                   Presets + input validation
+├── theme.py                      Palettes + installed fonts
+├── preferences.py                Remembered theme selection
+├── motion.py                     One animation clock + easing
+├── canvas_items.py               Retained canvas primitives
+├── scope.py                      Signal columns + scope rendering
+├── panels.py                     Title, counters + navigation
+├── widgets.py                    Drawn controls + sliders
+├── docs/                         Demo + release notes
+└── tools/                        Standalone builder + demo recorders
 ```
 
-Tk's event loop keeps animations responsive without worker threads or blocking sleeps. Changing data, switching algorithms, resetting, or closing the window cancels pending callbacks. Stop restores the original values because shifting and merging can temporarily overwrite array positions.
+One Tk event-loop clock schedules playback and visual transitions. Canvas items are created once and updated in place; unchanged geometry and colors are cached. Changing data, switching algorithms, resetting, or closing the window cancels the relevant animation jobs.
 
-Pausing settles the current visual transition. Single-step shows an exact snapshot. Very fast playback skips transitions to keep up; reduced motion disables transitions and completion effects entirely.
+Pausing freezes a moving swap; resuming continues from its displayed position. Single-step places each value at its exact snapshot position while colors settle. Very fast playback retargets visual transitions without dropping algorithm steps. Reduced motion replaces movement and the completion wave with brief color fades.
 
-The layout supports windows from **1000 × 740**. On shorter windows, inline notes are hidden; **Algorithm guide** stays available. Importing the modules does not launch the app.
+Build the standalone file with `python3 tools/build_release.py --version 3.0.0`. Record the current demo on an X11 desktop with FFmpeg using `python3 tools/record_demo.py`; recording uses temporary theme settings.
+
+The layout supports windows from **1000 × 740** at standard desktop font scaling. On shorter windows, inline notes are hidden; **Algorithm guide** stays available. Importing the modules does not launch the app.
 
 </details>
 
