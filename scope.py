@@ -44,7 +44,11 @@ class ScopeScreen(RetainedCanvas):
         self.bind("<Motion>", self._hover)
         self.bind("<Leave>", self._leave)
         self.bind("<Unmap>", lambda event: self.manager.cancel(self.key + ":scan"))
-        self.bind("<Map>", lambda event: self.set_running(self._running))
+        self.bind("<Map>", self._map)
+
+    def _map(self, event):
+        self.set_running(self._running)
+        self.paint()
 
     def _colors(self, weights, flash):
         p = self.theme.palette
@@ -178,7 +182,7 @@ class ScopeScreen(RetainedCanvas):
         return left, right, top, bottom, low, high, span
 
     def paint_scan(self):
-        if self._closed:
+        if self._closed or not self.winfo_ismapped():
             return
         p = self.theme.palette
         left, right, top, bottom, *_ = self._layout()
@@ -191,7 +195,7 @@ class ScopeScreen(RetainedCanvas):
         self.style(self._readout, text=f"STEP {self.step_number:04d} / {min(99, round(self.manager.fps)):02d} FPS", fill=p.MUTED)
 
     def paint(self):
-        if self._closed or self.winfo_width() < 50:
+        if self._closed or not self.winfo_ismapped() or self.winfo_width() < 50:
             return
         p = self.theme.palette
         left, right, top, bottom, low, high, span = self._layout()
