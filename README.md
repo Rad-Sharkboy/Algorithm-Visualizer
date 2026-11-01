@@ -61,7 +61,7 @@ The footer links back to the project through **Made by Radsharkboy**. The Run bu
 
 Requires **Python 3.10+**, **Tkinter**, and a graphical desktop. No pip dependencies are required.
 
-**Download [Algo-Studio-v3.0.0.py](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/download/v3.0.0/Algo-Studio-v3.0.0.py)** and run `py Algo-Studio-v3.0.0.py` on Windows or `python3 Algo-Studio-v3.0.0.py` on macOS/Linux. The single file includes the whole app. [SHA-256 checksums](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/download/v3.0.0/SHA256SUMS) are provided with the release.
+**Download [Algo-Studio-v3.0.0.py](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0/builds/Algo-Studio-v3.0.0.py)** and run `py Algo-Studio-v3.0.0.py` on Windows or `python3 Algo-Studio-v3.0.0.py` on macOS/Linux. The single file includes the whole app. A [portable ZIP](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0/builds/Algo-Studio-v3.0.0.zip) is also available; extract it before running. [SHA-256 checksums](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0/builds/SHA256SUMS) are provided with the release.
 
 Or run the source checkout:
 
