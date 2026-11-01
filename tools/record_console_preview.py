@@ -22,6 +22,19 @@ from PROJECT import Visualizer
 
 
 def record(output):
+    previous = os.environ.get("XDG_CONFIG_HOME")
+    with tempfile.TemporaryDirectory(prefix="algo-demo-settings-") as settings:
+        os.environ["XDG_CONFIG_HOME"] = settings
+        try:
+            _record(output)
+        finally:
+            if previous is None:
+                os.environ.pop("XDG_CONFIG_HOME", None)
+            else:
+                os.environ["XDG_CONFIG_HOME"] = previous
+
+
+def _record(output):
     if not shutil.which("ffmpeg") or not os.environ.get("DISPLAY"):
         raise SystemExit("Recording needs FFmpeg and a working X11 DISPLAY.")
     output.mkdir(parents=True, exist_ok=True)
