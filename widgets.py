@@ -21,10 +21,9 @@ class AnimatedButton(RetainedCanvas):
         self._surface = self.create_rectangle(0, 0, 0, 0, width=1)
         self._bands = [self.create_rectangle(0, 0, 0, 0, outline="") for _ in range(8)] if primary else []
         self._label = self.create_text(0, 0, font=(theme.mono, 10 if primary else 9, "bold" if primary else "normal"))
-        self._polygons = [self.create_polygon(0, 0, 0, 0, 0, 0, outline="") for _ in range(2)]
-        self._lines = [self.create_line(0, 0, 0, 0, width=1.4) for _ in range(4)]
-        self._arc = self.create_arc(0, 0, 0, 0, style="arc", width=1.4, start=40, extent=280)
-        self._dots = [self.create_oval(0, 0, 0, 0, outline="") for _ in range(3)]
+        self._polygons = [self.create_polygon(0, 0, 0, 0, 0, 0, outline="", state="hidden") for _ in range(2)]
+        self._lines = [self.create_line(0, 0, 0, 0, width=1.4, state="hidden") for _ in range(4)]
+        self._arc = self.create_arc(0, 0, 0, 0, style="arc", width=1.4, start=40, extent=280, state="hidden")
         self.bind("<Enter>", lambda event: self._hover(True))
         self.bind("<Leave>", lambda event: self._hover(False))
         self.bind("<ButtonPress-1>", self._press)
@@ -40,13 +39,16 @@ class AnimatedButton(RetainedCanvas):
         if isinstance(cnf, dict):
             kwargs = {**cnf, **kwargs}
             cnf = None
-        changed = False
+        changed = handled = False
         for name in ("text", "state", "command", "selected"):
             if name in kwargs:
+                handled = True
                 value = kwargs.pop(name)
-                setattr(self, {"text": "_text", "state": "_state"}.get(name, name), value)
-                changed = True
-        result = super().configure(cnf, **kwargs) if cnf is not None or kwargs or not changed else None
+                attribute = {"text": "_text", "state": "_state"}.get(name, name)
+                if getattr(self, attribute) != value:
+                    setattr(self, attribute, value)
+                    changed = True
+        result = super().configure(cnf, **kwargs) if cnf is not None or kwargs or not handled else None
         if changed:
             if self._state == "disabled":
                 self._pressed = False
@@ -158,8 +160,6 @@ class AnimatedButton(RetainedCanvas):
             self.style(item, fill=shade if self._state != "disabled" else bg)
         self.position(self._label, w / 2 + (10 if self.icon else 0), h / 2 + self._press_amount)
         self.style(self._label, text=self._text.upper(), fill=color)
-        for item in self._polygons + self._lines + [self._arc] + self._dots:
-            self.style(item, state="hidden")
         x, y = 20, h / 2 + self._press_amount
         if self.icon in ("play", "step"):
             play = ((-4, -6, 1, -3, 1, 3, -4, 6), (1, -3, 7, 0, 7, 0, 1, 3))
@@ -227,10 +227,9 @@ class InstrumentSlider(RetainedCanvas):
         self._track = self.create_line(0, 0, 0, 0, width=1)
         self._fill = self.create_line(0, 0, 0, 0, width=2)
         self._ticks = [self.create_line(0, 0, 0, 0) for _ in range(11)]
-        self._thumb_shadow = self.create_line(0, 0, 0, 0, width=14, capstyle="round")
-        self._thumb_rim = self.create_line(0, 0, 0, 0, width=14, capstyle="round")
-        self._thumb = self.create_line(0, 0, 0, 0, width=12, capstyle="round")
-        self._thumb_grip = self.create_line(0, 0, 0, 0, width=1)
+        self._thumb_shadow = self.create_oval(0, 0, 0, 0, outline="")
+        self._thumb_rim = self.create_oval(0, 0, 0, 0, outline="")
+        self._thumb = self.create_oval(0, 0, 0, 0, outline="")
         self._focus_ring = self.create_rectangle(0, 0, 0, 0, fill="", state="hidden")
         self._trace = variable.trace_add("write", self._changed)
         self.bind("<ButtonPress-1>", self._press)
@@ -402,16 +401,13 @@ class InstrumentSlider(RetainedCanvas):
             xx = left + (right - left) * index / 10
             self.position(item, xx, 22, xx, 26 if index % 5 == 0 else 24)
             self.style(item, fill=p.MUTED if index % 5 == 0 else p.BORDER)
-        self.position(self._thumb_shadow, center - 3, cy + 2, center + 3, cy + 2)
-        self.style(self._thumb_shadow, fill=lerp_color(getattr(p, self.bg_role), p.BORDER, .5))
-        self.position(self._thumb_rim, center - 3, cy, center + 3, cy)
-        self.style(self._thumb_rim, fill=lerp_color(p.BORDER, color, .2 + self._handle_amount * .8),
-                   width=14 + self._handle_amount)
-        self.position(self._thumb, center - 3, cy, center + 3, cy)
+        self.position(self._thumb_shadow, center - 7, cy - 5, center + 7, cy + 9)
+        self.style(self._thumb_shadow, fill=lerp_color(getattr(p, self.bg_role), p.BORDER, .35))
+        self.position(self._thumb_rim, center - 7, cy - 7, center + 7, cy + 7)
+        self.style(self._thumb_rim, fill=lerp_color(p.MUTED, color, self._handle_amount))
+        self.position(self._thumb, center - 6, cy - 6, center + 6, cy + 6)
         self.style(self._thumb, fill=lerp_color(p.THUMB, color, self._handle_amount * .1)
                    if self._state != "disabled" else lerp_color(p.THUMB, p.PANEL, .5))
-        self.position(self._thumb_grip, center, cy - 2, center, cy + 2)
-        self.style(self._thumb_grip, fill=lerp_color(p.MUTED, p.ACCENT, self._handle_amount * .4))
         self.position(self._focus_ring, 2, 2, self.winfo_width() - 2, 30)
         self.style(self._focus_ring, outline=p.BORDER, state="normal" if self._focused else "hidden")
 
@@ -462,6 +458,7 @@ class InstrumentSelect(AnimatedButton):
         self.bind("<KeyPress-Up>", self._open_key)
         self.bind("<KeyRelease-space>", self._select_release)
         self.bind("<KeyRelease-Return>", self._select_release)
+        self.bind("<Unmap>", self._unmap)
         self._value_changed()
 
     def _select_release(self, event):
@@ -493,6 +490,7 @@ class InstrumentSelect(AnimatedButton):
             previous._close_popup()
         root._instrument_select = self
         self.popup = tk.Toplevel(root)
+        self.popup.bind("<Destroy>", self._popup_destroyed)
         self.popup.overrideredirect(True)
         self.popup.transient(root)
         w, h = max(self.winfo_width(), 164), len(self.values) * 32 + 4
@@ -555,14 +553,28 @@ class InstrumentSelect(AnimatedButton):
         self.event_generate("<<ComboboxSelected>>")
         return "break"
 
-    def _close_popup(self):
+    def _close_popup(self, restore_focus=True):
         if self.popup is not None:
-            self._popup_canvas.grab_release()
-            self.popup.destroy()
+            popup, canvas = self.popup, self._popup_canvas
             self.popup = self._popup_canvas = None
-            if not self._closed and self.winfo_exists():
+            if canvas is not None and canvas.winfo_exists() and canvas.grab_current() is canvas:
+                canvas.grab_release()
+            if getattr(popup.master, "_instrument_select", None) is self:
+                popup.master._instrument_select = None
+            popup.destroy()
+            if restore_focus and not self._closed and self.winfo_exists() and self.winfo_ismapped():
                 self.focus_set()
         return "break"
+
+    def _popup_destroyed(self, event):
+        if event.widget is self.popup:
+            if getattr(self.popup.master, "_instrument_select", None) is self:
+                self.popup.master._instrument_select = None
+            self.popup = self._popup_canvas = None
+
+    def _unmap(self, event):
+        self._close_popup(restore_focus=False)
+        self.settle()
 
     def _dispose(self, event):
         if event.widget is self:
