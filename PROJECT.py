@@ -3,12 +3,13 @@
 import itertools
 import time
 import tkinter as tk
+import webbrowser
 
 from algorithms import ALGORITHMS, Step
 from datasets import generate_values, parse_values
 from motion import AnimationManager
 from theme import StudioTheme, SPACING, THEME_LABELS
-from canvas_items import RetainedCanvas
+from preferences import load_theme, save_theme
 from scope import ScopeScreen
 from panels import DisplayTitle, MeterRow, StatusLamp, Navigation
 from widgets import AnimatedButton, InstrumentSlider, InstrumentSelect, InstrumentEntry, MotionToggle
@@ -19,10 +20,11 @@ class Visualizer:
         self.root = root
         self.manager = AnimationManager(root)
         self.reduced_motion = tk.BooleanVar(value=False)
-        self.theme = StudioTheme(root, self.manager, self.reduced_motion)
+        self._saved_theme = load_theme(THEME_LABELS)
+        self.theme = StudioTheme(root, self.manager, self.reduced_motion, mode=self._saved_theme)
         self.font = self.mono = self.theme.mono
         self.theme.bind(root, bg="BG")
-        self.theme_var = tk.StringVar(value="System")
+        self.theme_var = tk.StringVar(value=self._saved_theme)
         self._theme_id = None
         root.title("Algo Studio · Algorithm Visualizer")
         root.geometry(f"{min(1280, max(1000, root.winfo_screenwidth() - 60))}x"
@@ -83,14 +85,18 @@ class Visualizer:
                               text=text, icon=icon, width=width, primary=primary, role=role, height=height)
 
     def _change_theme(self, event=None):
-        self.theme.select(self.theme_var.get())
+        mode = self.theme_var.get()
+        self.theme.select(mode)
+        if mode != self._saved_theme:
+            if save_theme(mode, THEME_LABELS):
+                self._saved_theme = mode
 
     def _poll_theme(self):
         self._theme_id = None
         if self._closed:
             return
         if self.theme_var.get() == "System":
-            self._change_theme()
+            self.theme.select("System")
         self._theme_id = self.manager.call_later(2000, self._poll_theme)
 
     def _build_sidebar(self):
@@ -123,9 +129,34 @@ class Visualizer:
                     "MUTED", justify="left", anchor="w").pack(anchor="w", padx=5, pady=(10, 14))
         self.motion_toggle = MotionToggle(footer, self.theme, self.manager, self.reduced_motion, self._motion_preference_changed)
         self.motion_toggle.pack(fill="x")
-        self.library_count = self._label(footer, "13 algorithms /\nendless discoveries", 7, "MUTED", anchor="w", justify="left")
+        self.library_count = self._label(footer, "13 algorithms", 7, "MUTED", anchor="w", justify="left")
         self.library_count.pack(anchor="w", padx=5, pady=(13, 0))
+        self.credit_link = self._label(footer, "Made by Radsharkboy", 7, "MUTED", cursor="hand2",
+                                      takefocus=True, highlightthickness=1)
+        self.theme.bind(self.credit_link, highlightbackground="BG", highlightcolor="ACCENT")
+        self.credit_link.pack(anchor="w", padx=4, pady=(2, 0))
+        for event in ("<ButtonRelease-1>", "<Return>", "<space>"):
+            self.credit_link.bind(event, self._open_project)
+        for event in ("<Enter>", "<FocusIn>"):
+            self.credit_link.bind(event, lambda event: self._credit_highlight(True))
+        for event in ("<Leave>", "<FocusOut>"):
+            self.credit_link.bind(event, lambda event: self._credit_highlight(False))
         self._build_nav()
+
+    def _credit_highlight(self, active):
+        active = active or self.root.focus_get() is self.credit_link
+        self.theme.bind(self.credit_link, fg="ACCENT" if active else "MUTED")
+
+    def _open_project(self, event=None):
+        url = "https://github.com/Rad-Sharkboy/Algorithm-Visualizer"
+        try:
+            opened = webbrowser.open_new_tab(url)
+        except (webbrowser.Error, OSError):
+            opened = False
+        if not opened:
+            self.message.configure(text=f"Project: {url}")
+            self.theme.bind(self.message, fg="MUTED")
+        return "break"
 
     def _build_nav(self):
         names = [name for name, meta in ALGORITHMS.items() if meta.category == self.category]
@@ -523,7 +554,7 @@ class Visualizer:
 
     def _launch(self):
         self._launch_id = None
-        if self._closed or self.reduced_motion.get():
+        if self._closed or self.reduced_motion.get() or self.state != "ready":
             return
         self.title.launch()
         self.algorithm_list.launch()
