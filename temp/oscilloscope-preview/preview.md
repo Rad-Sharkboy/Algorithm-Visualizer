@@ -1,4 +1,6 @@
-# Algo Studio · console preview
+# Algo Studio · console preview archive
+
+This recording captures the design preview. Get the finalized app from **[v3.0.0 · In Full Color](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v3.0.0)**.
 
 [Watch the 60 FPS recording](demo.mp4?raw=1) · [Open the animated demo](demo.gif?raw=1) · [Browse the preview source](../../PROJECT.py)
 
@@ -32,4 +34,4 @@ On Windows, use `py PROJECT.py`. Python 3.10 or newer, Tkinter, and a graphical 
 python3 tools/record_console_preview.py --output temp/oscilloscope-preview
 ```
 
-This folder is for preview review on `preview/oscilloscope-console`. The repository README, its existing media, `main`, and published releases have not been changed by this work.
+This folder remains on `preview/oscilloscope-console` as a design archive. The final release adds remembered themes, circular slider handles, a clickable project credit, and lifecycle fixes. Its current demo is in `docs/demo.gif`.
