@@ -19,8 +19,8 @@ class AnimatedButton(RetainedCanvas):
         self._hover_amount = self._press_amount = self._icon = 0.0
         self._icon_target = 0.0
         self._playback = "ready"
-        self._surface = self.create_rectangle(0, 0, 0, 0, width=1)
-        self._bands = [self.create_rectangle(0, 0, 0, 0, outline="") for _ in range(8)] if primary else []
+        self._surface = self.create_image(0, 0, anchor="nw")
+        self._surface_image = None
         self._label = self.create_text(0, 0, font=theme.typeface(10 if primary else 9, bold=primary))
         self._polygons = [self.create_polygon(0, 0, 0, 0, 0, 0, outline="", state="hidden") for _ in range(2)]
         self._lines = [self.create_line(0, 0, 0, 0, width=1.4, state="hidden") for _ in range(4)]
@@ -134,31 +134,45 @@ class AnimatedButton(RetainedCanvas):
     def motion_changed(self):
         self.settle()
 
+    def _surface_sprite(self, surface):
+        w, h = self.winfo_width(), self.winfo_height()
+        hover = round(self._hover_amount * 6) / 6
+        press = round(self._press_amount * 6) / 6
+        inset = 2 + press * 2
+        bg = getattr(surface, self.bg_role)
+        top = surface.BUTTON_TOP if self.primary else bg
+        bottom = surface.BUTTON_BASE if self.primary else bg
+        if self.primary:
+            top = lerp_color(lerp_color(top, surface.TEXT, hover * .1), surface.BG, press * .2)
+            bottom = lerp_color(lerp_color(bottom, surface.TEXT, hover * .1), surface.BG, press * .2)
+        border = surface.ACCENT if self.primary or self.selected or self._focused else lerp_color(surface.BORDER, surface.ACCENT, hover)
+        if self._state == "disabled":
+            border, top, bottom = surface.BORDER, bg, bg
+        image = self.theme.sprites.box(
+            max(1, self.theme.px(w - 2 * inset)), max(1, self.theme.px(h - 2 * inset)),
+            self.theme.px(5), top, border=border, border_w=self.theme.scale * (2 if self._focused else 1),
+            fill_bottom=bottom)
+        return inset, image
+
+    def prepare_palette(self, palette):
+        if not self._closed and self.winfo_width() >= 10 and self.winfo_height() >= 10:
+            self._surface_sprite(palette)
+
     def paint(self):
         if self._closed or not hasattr(self, "_surface"):
             return
         p = self.theme.palette
         w, h = self.winfo_width(), self.winfo_height()
-        inset = 2 + self._press_amount * 2
-        bg = getattr(p, self.bg_role)
-        fill = lerp_color(p.ACCENT, p.TEXT, self._hover_amount * .1) if self.primary else bg
-        fill = lerp_color(fill, p.BG, self._press_amount * .2)
+        if w < 10 or h < 10:
+            return
         color = p.ON_ACCENT if self.primary else lerp_color(p.TEXT, p.ACCENT, self._hover_amount)
-        border = p.ACCENT if self.primary or self.selected else lerp_color(p.BORDER, p.ACCENT, self._hover_amount)
         if self._state == "disabled":
-            color, border, fill = p.MUTED, p.BORDER, bg
+            color = p.MUTED
         if self.selected:
             color = p.ACCENT
-        self.position(self._surface, inset, inset, w - inset, h - inset)
-        self.style(self._surface, fill=fill, outline=border, width=2 if self._focused else 1)
-        for band, item in enumerate(self._bands):
-            top, bottom = inset + 1, h - inset - 1
-            self.position(item, inset + 1, top + (bottom - top) * band / 8,
-                          w - inset - 1, top + (bottom - top) * (band + 1) / 8)
-            shade = lerp_color(p.BUTTON_TOP, p.BUTTON_BASE, band / 7)
-            shade = lerp_color(shade, p.TEXT, self._hover_amount * .1)
-            shade = lerp_color(shade, p.BG, self._press_amount * .2)
-            self.style(item, fill=shade if self._state != "disabled" else bg)
+        inset, self._surface_image = self._surface_sprite(self.theme.control_palette)
+        self.position(self._surface, inset, inset)
+        self.style(self._surface, image=self._surface_image)
         self.position(self._label, w / 2 + (10 if self.icon else 0), h / 2 + self._press_amount)
         self.style(self._label, text=self._text.upper(), fill=color)
         x, y = 20, h / 2 + self._press_amount
@@ -225,13 +239,10 @@ class InstrumentSlider(RetainedCanvas):
         self.visual = 0.0
         self._handle_amount = 0.0
         self._drag_offset = 0
-        self._track = self.create_line(0, 0, 0, 0, width=1)
-        self._fill = self.create_line(0, 0, 0, 0, width=2)
-        self._ticks = [self.create_line(0, 0, 0, 0) for _ in range(11)]
-        self._thumb_shadow = self.create_oval(0, 0, 0, 0, outline="")
-        self._thumb_rim = self.create_oval(0, 0, 0, 0, outline="")
-        self._thumb = self.create_oval(0, 0, 0, 0, outline="")
-        self._focus_ring = self.create_rectangle(0, 0, 0, 0, fill="", state="hidden")
+        self._track = self.create_line(0, 0, 0, 0, width=4, capstyle="round")
+        self._fill = self.create_line(0, 0, 0, 0, width=4, capstyle="round")
+        self._thumb = self.create_image(0, 0)
+        self._thumb_image = None
         self._trace = variable.trace_add("write", self._changed)
         self.bind("<ButtonPress-1>", self._press)
         self.bind("<B1-Motion>", self._drag)
@@ -387,30 +398,34 @@ class InstrumentSlider(RetainedCanvas):
             self.variable.trace_remove("write", self._trace)
         super()._dispose(event)
 
+    def _thumb_sprite(self, surface):
+        amount = round(self._handle_amount * 6) / 6
+        diameter = self.theme.px(22 + 2 * amount)
+        fill = surface.THUMB if self._state != "disabled" else lerp_color(surface.THUMB, surface.PANEL, .5)
+        edge = lerp_color(surface.MUTED, surface.ACCENT, amount)
+        return self.theme.sprites.box(
+            diameter, diameter, diameter / 2, fill, border=edge,
+            border_w=self.theme.scale * (1 + amount), fill_bottom=lerp_color(fill, surface.BG, .08),
+            shadow=.16, shadow_dy=self.theme.scale, shadow_blur=self.theme.scale)
+
+    def prepare_palette(self, palette):
+        if not self._closed:
+            self._thumb_sprite(palette)
+
     def paint(self):
         if self._closed or not hasattr(self, "_thumb") or self._last_value is None:
             return
         p = self.theme.palette
         left, right, center = self._geometry()
-        cy = 13
+        cy = 16
         color = p.MUTED if self._state == "disabled" else p.ACCENT
         self.position(self._track, left, cy, right, cy)
         self.style(self._track, fill=p.BORDER)
         self.position(self._fill, left, cy, center, cy)
         self.style(self._fill, fill=color)
-        for index, item in enumerate(self._ticks):
-            xx = left + (right - left) * index / 10
-            self.position(item, xx, 22, xx, 26 if index % 5 == 0 else 24)
-            self.style(item, fill=p.MUTED if index % 5 == 0 else p.BORDER)
-        self.position(self._thumb_shadow, center - 7, cy - 5, center + 7, cy + 9)
-        self.style(self._thumb_shadow, fill=lerp_color(getattr(p, self.bg_role), p.BORDER, .35))
-        self.position(self._thumb_rim, center - 7, cy - 7, center + 7, cy + 7)
-        self.style(self._thumb_rim, fill=lerp_color(p.MUTED, color, self._handle_amount))
-        self.position(self._thumb, center - 6, cy - 6, center + 6, cy + 6)
-        self.style(self._thumb, fill=lerp_color(p.THUMB, color, self._handle_amount * .1)
-                   if self._state != "disabled" else lerp_color(p.THUMB, p.PANEL, .5))
-        self.position(self._focus_ring, 2, 2, self.winfo_width() - 2, 30)
-        self.style(self._focus_ring, outline=p.BORDER, state="normal" if self._focused else "hidden")
+        self._thumb_image = self._thumb_sprite(self.theme.control_palette)
+        self.position(self._thumb, center, cy)
+        self.style(self._thumb, image=self._thumb_image)
 
 
 class InstrumentEntry(LayoutEntry):
