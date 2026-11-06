@@ -2,6 +2,7 @@
 
 Usage: python3 tools/build_release.py --version 3.0.0
 Outputs: dist/Algo-Studio-v3.0.0.py and dist/SHA256SUMS
+Hotfix: python3 tools/build_release.py --version 3.0.0-hotfix.1
 """
 
 import argparse
@@ -13,12 +14,12 @@ import symtable
 
 ROOT = Path(__file__).resolve().parents[1]
 # Dependencies precede their consumers; PROJECT.py supplies the entry point.
-MODULES = ("algorithms", "datasets", "motion", "theme", "preferences", "canvas_items", "scope", "panels", "widgets", "PROJECT")
+MODULES = ("algorithms", "datasets", "motion", "layout", "theme", "preferences", "canvas_items", "scope", "panels", "widgets", "PROJECT")
 
 
 def version_number(value):
-    if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", value):
-        raise argparse.ArgumentTypeError("Use a version such as 3.0.0 (without v).")
+    if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-hotfix\.[1-9]\d*)?", value, re.ASCII):
+        raise argparse.ArgumentTypeError("Use a version such as 3.0.0 or 3.0.0-hotfix.1 (without v).")
     return value
 
 
