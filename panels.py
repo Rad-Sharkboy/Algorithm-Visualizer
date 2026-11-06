@@ -1,7 +1,6 @@
 """Retained instrument typography, meters, status, and navigation."""
 
 import math
-from tkinter import font as tkfont
 
 from canvas_items import RetainedCanvas
 from motion import lerp_color
@@ -13,8 +12,8 @@ class DisplayTitle(RetainedCanvas):
         self.reduced_motion = reduced_motion
         self.text = "Sorting, made visible."
         self.progress = 1.0
-        self._roman = tkfont.Font(root=self, family=theme.display, size=39)
-        self._italic = tkfont.Font(root=self, family=theme.display, size=39, slant="italic")
+        self._roman = theme.typeface(39, family=theme.display)
+        self._italic = theme.typeface(39, family=theme.display, italic=True)
         self._first = self.create_text(0, 0, anchor="w", font=self._roman)
         self._last = self.create_text(0, 0, anchor="w", font=self._italic)
 
@@ -42,15 +41,14 @@ class DisplayTitle(RetainedCanvas):
         first = self.text[:-8] if self.text.endswith("visible.") else self.text
         last = "visible." if self.text.endswith("visible.") else ""
         size = 39 if self.winfo_width() > 720 else 33
-        if self._roman.cget("size") != size:
-            self._roman.configure(size=size)
-            self._italic.configure(size=size)
+        self._roman = self.theme.typeface(size, family=self.theme.display)
+        self._italic = self.theme.typeface(size, family=self.theme.display, italic=True)
         y = 40 + (1 - self.progress) * 12
         color = lerp_color(p.BG, p.TEXT, self.progress)
         self.position(self._first, 0, y)
-        self.position(self._last, self._roman.measure(first), y)
-        self.style(self._first, text=first, fill=color)
-        self.style(self._last, text=last, fill=color)
+        self.position(self._last, self._roman.measure(first) / self.theme.scale, y)
+        self.style(self._first, text=first, fill=color, font=self._roman)
+        self.style(self._last, text=last, fill=color, font=self._italic)
 
 
 class MeterRow(RetainedCanvas):
@@ -61,8 +59,8 @@ class MeterRow(RetainedCanvas):
         self.targets = self.values.copy()
         self._labels, self._numbers, self._separators = [], [], []
         for label in ("COMPARISONS", "ARRAY WRITES", "VISUAL STEPS", "ACTIVE / SEC"):
-            self._labels.append(self.create_text(0, 0, anchor="nw", text=" ".join(label), font=(theme.mono, 7)))
-            self._numbers.append(self.create_text(0, 0, anchor="nw", font=(theme.mono, 27)))
+            self._labels.append(self.create_text(0, 0, anchor="nw", text=" ".join(label), font=theme.typeface(7)))
+            self._numbers.append(self.create_text(0, 0, anchor="nw", font=theme.typeface(27)))
         self._separators = [self.create_line(0, 0, 0, 0) for _ in range(3)]
         self._rule = self.create_line(0, 0, 0, 0)
 
@@ -112,7 +110,7 @@ class StatusLamp(RetainedCanvas):
         self.state = "ready"
         self.phase = 0.0
         self._dot = self.create_oval(0, 0, 0, 0)
-        self._label = self.create_text(0, 0, anchor="w", font=(theme.mono, 8))
+        self._label = self.create_text(0, 0, anchor="w", font=theme.typeface(8))
         self.bind("<Unmap>", lambda event: self.manager.cancel(self.key + ":pulse"))
         self.bind("<Map>", lambda event: self.set(self.state))
 
@@ -153,8 +151,8 @@ class Navigation(RetainedCanvas):
         self.intro = [1.0] * 13
         self._hovered = None
         self._focused = False
-        self._lines = [self.create_text(0, 0, anchor="w", font=(theme.mono, 9)) for _ in range(13)]
-        self._numbers = [self.create_text(0, 0, anchor="w", font=(theme.mono, 7)) for _ in range(13)]
+        self._lines = [self.create_text(0, 0, anchor="w", font=theme.typeface(9)) for _ in range(13)]
+        self._numbers = [self.create_text(0, 0, anchor="w", font=theme.typeface(7)) for _ in range(13)]
         self._line = self.create_rectangle(0, 0, 0, 0, outline="")
         self._dot = self.create_oval(0, 0, 0, 0, outline="")
         self._focus_line = self.create_rectangle(0, 0, 0, 0, fill="", state="hidden")
