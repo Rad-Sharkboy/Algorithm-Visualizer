@@ -4,12 +4,14 @@ import itertools
 import time
 import tkinter as tk
 import webbrowser
+import weakref
 
 from algorithms import ALGORITHMS, Step
 from datasets import generate_values, parse_values
 from motion import AnimationManager
 from theme import StudioTheme, SPACING, THEME_LABELS
 from preferences import load_theme, save_theme
+from layout import enable_native_dpi
 from scope import ScopeScreen
 from panels import DisplayTitle, MeterRow, StatusLamp, Navigation
 from widgets import AnimatedButton, InstrumentSlider, InstrumentSelect, InstrumentEntry, MotionToggle
@@ -27,11 +29,12 @@ class Visualizer:
         self.theme_var = tk.StringVar(value=self._saved_theme)
         self._theme_id = None
         root.title("Algo Studio · Algorithm Visualizer")
-        root.geometry(f"{min(1280, max(1000, root.winfo_screenwidth() - 60))}x"
-                      f"{min(900, max(740, root.winfo_screenheight() - 60))}")
-        root.minsize(1000, 740)
+        root.geometry(f"{min(self.theme.px(1280), self.theme.screen_width - self.theme.px(24))}x"
+                      f"{min(self.theme.px(900), self.theme.screen_height - self.theme.px(48))}")
+        root.minsize(self.theme.px(1000), self.theme.px(740))
         root.protocol("WM_DELETE_WINDOW", self.close)
         self._closed = False
+        self._guides = weakref.WeakSet()
         self._after_id = None
         self._motion_id = None
         self._motion_progress = self._finish_progress = 1.0
@@ -214,7 +217,7 @@ class Visualizer:
         self.array_count.pack(side="right", padx=12)
         self.message = self._label(scope_frame, "", 9, "TEXT", bg="PANEL", anchor="w", justify="left", padx=14, pady=11, wraplength=700)
         self.message.grid(row=2, column=0, sticky="ew")
-        self.message.bind("<Configure>", lambda event: self.message.configure(wraplength=max(100, event.width - 28)))
+        self.message.bind("<Configure>", lambda event: self.message.configure(wraplength=max(100, event.width / self.theme.scale - 28)))
         controls = self.theme.frame(main)
         controls.grid(row=4, column=0, sticky="ew", pady=(16, 16))
         self.run_button = self._button(controls, "Run", self.toggle_run, "play", width=144, primary=True, height=44)
@@ -241,7 +244,7 @@ class Visualizer:
         self.preset_box = InstrumentSelect(data_top, self.theme, self.manager, self.reduced_motion,
                                            self.preset_var, ("Random", "Nearly sorted", "Reversed", "Few unique"), width=166)
         self.preset_box.pack(side="left")
-        self.size_label = self._label(data_top, "28 values", 8, "MUTED")
+        self.size_label = self._label(data_top, "28 values", 8, "MUTED", width=9, anchor="w")
         self.size_label.pack(side="left", padx=(12, 8))
         self.size_scale = InstrumentSlider(data_top, self.theme, self.manager, self.size_var, self._size_changed,
                                             self.reduced_motion, from_=8, to=64, length=94)
@@ -290,7 +293,22 @@ class Visualizer:
 
     def _resize(self, event):
         if event.widget is self.root and hasattr(self, "learn"):
-            if event.height < 870:
+            previous_scale = self.theme.scale
+            if self.theme.update_scale():
+                current = getattr(self.root, "_instrument_select", None)
+                if current is not None:
+                    current._close_popup(restore_focus=False)
+                self.root.minsize(self.theme.px(1000), self.theme.px(740))
+                for guide in tuple(self._guides):
+                    if guide.winfo_exists():
+                        ratio = self.theme.scale / previous_scale
+                        width = min(self.theme.screen_width - self.theme.px(24),
+                                    max(self.theme.px(610), round(guide.winfo_width() * ratio)))
+                        height = min(self.theme.screen_height - self.theme.px(48),
+                                     max(self.theme.px(440), round(guide.winfo_height() * ratio)))
+                        guide.geometry(f"{width}x{height}")
+                        guide.minsize(self.theme.px(610), self.theme.px(440))
+            if event.height / self.theme.scale < 870:
                 self.learn.grid_remove()
             else:
                 self.learn.grid()
@@ -298,8 +316,10 @@ class Visualizer:
     def show_guide(self):
         meta = ALGORITHMS[self.algorithm]
         guide = tk.Toplevel(self.root)
+        self._guides.add(guide)
         guide.title(f"{meta.name} · Algorithm guide")
-        guide.geometry("610x440")
+        guide.geometry(f"{self.theme.px(610)}x{self.theme.px(440)}")
+        guide.minsize(self.theme.px(610), self.theme.px(440))
         guide.transient(self.root)
         self.theme.bind(guide, bg="PANEL")
         self._label(guide, meta.name.upper(), 17, bg="PANEL").pack(anchor="w", padx=24, pady=(24, 12))
@@ -610,6 +630,7 @@ class MeterValue:
 
 
 def main():
+    enable_native_dpi()
     root = tk.Tk()
     Visualizer(root)
     root.mainloop()
