@@ -24,11 +24,11 @@ class ScopeScreen(RetainedCanvas):
         self._bounds = []
         self._grid = [self.create_line(0, 0, 0, 0) for _ in range(14)]
         self._ticks = [self.create_line(0, 0, 0, 0) for _ in range(8)]
-        self._axis = [self.create_text(0, 0, anchor="e", font=(theme.mono, 7)) for _ in range(5)]
+        self._axis = [self.create_text(0, 0, anchor="e", font=theme.typeface(7)) for _ in range(5)]
         self._baseline = self.create_line(0, 0, 0, 0)
         self._sweep = [self.create_line(0, 0, 0, 0) for _ in range(3)]
-        self._readout = self.create_text(0, 0, anchor="ne", font=(theme.mono, 7))
-        self._trace_label = self.create_text(0, 0, anchor="nw", text="S I G N A L   /   0 1", font=(theme.mono, 7))
+        self._readout = self.create_text(0, 0, anchor="ne", font=theme.typeface(7))
+        self._trace_label = self.create_text(0, 0, anchor="nw", text="S I G N A L   /   0 1", font=theme.typeface(7))
         self.bars = []
         for index in range(64):
             self.bars.append(dict(
@@ -36,11 +36,11 @@ class ScopeScreen(RetainedCanvas):
                 body=self.create_polygon(0, 0, 0, 0, 0, 0, outline=""),
                 bands=[self.create_rectangle(0, 0, 0, 0, outline="") for _ in range(8)],
                 edge=self.create_line(0, 0, 0, 0, width=1),
-                value=self.create_text(0, 0, font=(theme.mono, 8)),
-                index=self.create_text(0, 0, font=(theme.mono, 7)),
+                value=self.create_text(0, 0, font=theme.typeface(8)),
+                index=self.create_text(0, 0, font=theme.typeface(7)),
             ))
         self._tooltip_bg = self.create_rectangle(0, 0, 0, 0, state="hidden", tags="tooltip")
-        self._tooltip_text = self.create_text(0, 0, font=(theme.mono, 8), state="hidden", tags="tooltip")
+        self._tooltip_text = self.create_text(0, 0, font=theme.typeface(8), state="hidden", tags="tooltip")
         self.bind("<Motion>", self._hover)
         self.bind("<Leave>", self._leave)
         self.bind("<Unmap>", lambda event: self.manager.cancel(self.key + ":scan"))
