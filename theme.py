@@ -8,6 +8,7 @@ import weakref
 
 from motion import lerp_color, ease_in_out_quad
 from layout import LayoutFrame, LayoutLabel, display_metrics
+from aa_gfx import SpriteCache
 
 
 THEMES = {
@@ -16,7 +17,7 @@ THEMES = {
                  COMPARE="#FF5A4E", PIVOT="#5CE1E6", SETTLED="#B6E36B",
                  DISCARDED="#554E41", ON_ACCENT="#0E0D0B"),
     "Light": dict(BG="#F2EDE2", PANEL="#FBF8F1", INSET="#EAE4D8", BORDER="#D8D0BE",
-                  TEXT="#1C1A16", MUTED="#7A7260", BAR="#1F3A33", ACCENT="#92500F",
+                  TEXT="#1C1A16", MUTED="#6D6553", BAR="#1F3A33", ACCENT="#92500F",
                   COMPARE="#B93428", PIVOT="#087A80", SETTLED="#526F1D",
                   DISCARDED="#A69D89", ON_ACCENT="#FBF8F1", THUMB="#FBF8F1"),
     "Red": dict(BG="#130D10", PANEL="#1D1418", INSET="#170F13", BORDER="#3B272F",
@@ -81,6 +82,8 @@ class StudioTheme:
         self.mode = mode
         self.name = system_theme() if mode == "System" else mode
         self.palette = SimpleNamespace(**THEMES[self.name])
+        self.control_palette = self.palette
+        self.sprites = SpriteCache(root, limit=192)
         self.display, self.mono = configure_fonts(root)
         self.font = self.mono
         self._bindings = weakref.WeakKeyDictionary()
@@ -139,9 +142,19 @@ class StudioTheme:
             return False
         self.name = target
         start, end = vars(self.palette).copy(), THEMES[target]
+        self.manager.cancel_prefix("theme:warm:")
+        if not self.reduced_motion.get():
+            palette = SimpleNamespace(**end)
+            views = [view for view in self._views if hasattr(view, "prepare_palette")]
+            for index, view in enumerate(views):
+                self.manager.call_later((index + 1) * 12, lambda item=view: item.prepare_palette(palette),
+                                        key=f"theme:warm:{index}")
         def update(amount):
             colors = end if amount >= 1 else {role: lerp_color(start[role], color, amount) for role, color in end.items()}
             self.palette = SimpleNamespace(**colors)
+            if amount >= 1:
+                self.control_palette = self.palette
+                self.manager.cancel_prefix("theme:warm:")
             self.refresh()
         self.manager.cancel("theme:fade")
         if self.reduced_motion.get():
