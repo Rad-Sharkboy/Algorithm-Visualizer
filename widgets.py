@@ -4,6 +4,7 @@ import math
 import tkinter as tk
 
 from canvas_items import RetainedCanvas
+from layout import LayoutEntry
 from motion import lerp_color
 
 
@@ -20,7 +21,7 @@ class AnimatedButton(RetainedCanvas):
         self._playback = "ready"
         self._surface = self.create_rectangle(0, 0, 0, 0, width=1)
         self._bands = [self.create_rectangle(0, 0, 0, 0, outline="") for _ in range(8)] if primary else []
-        self._label = self.create_text(0, 0, font=(theme.mono, 10 if primary else 9, "bold" if primary else "normal"))
+        self._label = self.create_text(0, 0, font=theme.typeface(10 if primary else 9, bold=primary))
         self._polygons = [self.create_polygon(0, 0, 0, 0, 0, 0, outline="", state="hidden") for _ in range(2)]
         self._lines = [self.create_line(0, 0, 0, 0, width=1.4, state="hidden") for _ in range(4)]
         self._arc = self.create_arc(0, 0, 0, 0, style="arc", width=1.4, start=40, extent=280, state="hidden")
@@ -412,9 +413,9 @@ class InstrumentSlider(RetainedCanvas):
         self.style(self._focus_ring, outline=p.BORDER, state="normal" if self._focused else "hidden")
 
 
-class InstrumentEntry(tk.Entry):
+class InstrumentEntry(LayoutEntry):
     def __init__(self, parent, theme, manager, reduced_motion, **kwargs):
-        super().__init__(parent, relief="flat", bd=0, highlightthickness=1, font=(theme.mono, 10), **kwargs)
+        super().__init__(parent, theme, relief="flat", bd=0, highlightthickness=1, font=theme.typeface(10), **kwargs)
         self.theme, self.manager, self.reduced_motion = theme, manager, reduced_motion
         self.key = f"entry:{self}"
         self._focus_amount = 0.0
@@ -451,6 +452,8 @@ class InstrumentSelect(AnimatedButton):
         self.labels = labels or {}
         self.popup = None
         self._popup_canvas = None
+        self._popup_owner = None
+        self._popup_configure = None
         super().__init__(parent, theme, manager, reduced_motion, self._open, width=width, height=34, role=role)
         self._chevron = self.create_line(0, 0, 0, 0, 0, 0, width=1)
         self._trace = variable.trace_add("write", self._value_changed)
@@ -479,7 +482,7 @@ class InstrumentSelect(AnimatedButton):
         return "break"
 
     def _open(self):
-        if self._state == "disabled":
+        if self._state == "disabled" or self._closed or not self.winfo_ismapped():
             return
         if self.popup is not None:
             self._close_popup()
@@ -487,44 +490,94 @@ class InstrumentSelect(AnimatedButton):
         root = self.winfo_toplevel()
         previous = getattr(root, "_instrument_select", None)
         if previous is not None and previous is not self:
-            previous._close_popup()
+            previous._close_popup(restore_focus=False)
         root._instrument_select = self
-        self.popup = tk.Toplevel(root)
+        self._popup_owner = root
+        self.popup = self.theme.frame(root, role="INSET")
         self.popup.bind("<Destroy>", self._popup_destroyed)
-        self.popup.overrideredirect(True)
-        self.popup.transient(root)
-        w, h = max(self.winfo_width(), 164), len(self.values) * 32 + 4
-        x = min(self.winfo_rootx(), self.winfo_screenwidth() - w)
-        y = self.winfo_rooty() + self.winfo_height()
-        if y + h > self.winfo_screenheight():
-            y = self.winfo_rooty() - h
-        self.popup.geometry(f"{w}x{h}+{max(0, x)}+{max(0, y)}")
+        self._popup_font = self.theme.typeface(9)
+        self._row_height = max(32, math.ceil(self._popup_font.metrics("linespace") / self.theme.scale) + 14)
+        width = max(self._popup_font.measure(self.labels.get(value, value).upper()) for value in self.values) / self.theme.scale + 34
+        self._popup_width = max(self.winfo_width(), 164, width)
+        self._popup_height = len(self.values) * self._row_height + 4
+        w, h = self._popup_width, self._popup_height
         canvas = RetainedCanvas(self.popup, self.theme, self.manager, role="INSET", width=w, height=h, takefocus=True)
         canvas.pack(fill="both", expand=True)
         self._popup_canvas = canvas
         self._choice = self.values.index(self.variable.get()) if self.variable.get() in self.values else 0
         self._popup_border = canvas.create_rectangle(1, 1, w - 1, h - 1, fill="", width=1)
         self._popup_mark = canvas.create_line(4, 0, 4, 0, width=2)
-        self._popup_text = [canvas.create_text(16, 18 + i * 32, anchor="w", font=(self.theme.mono, 9)) for i in range(len(self.values))]
+        self._popup_text = [canvas.create_text(16, 2 + (i + .5) * self._row_height, anchor="w",
+                                             font=self._popup_font) for i in range(len(self.values))]
         canvas.paint = self._paint_popup
         self._paint_popup()
+        canvas.bind("<Map>", self._activate_popup)
+        canvas.bind("<FocusOut>", self._popup_focus_out)
         canvas.bind("<Motion>", self._popup_hover)
         canvas.bind("<ButtonPress-1>", self._popup_click)
+        canvas.bind("<KeyPress>", lambda event: "break")
         canvas.bind("<KeyPress-Up>", lambda event: self._popup_key(-1))
         canvas.bind("<KeyPress-Down>", lambda event: self._popup_key(1))
         canvas.bind("<KeyPress-Return>", lambda event: self._choose())
         canvas.bind("<KeyPress-space>", lambda event: self._choose())
         canvas.bind("<KeyPress-Escape>", lambda event: self._close_popup())
-        canvas.bind("<KeyPress-Tab>", lambda event: self._close_popup())
+        canvas.bind("<KeyPress-Tab>", self._popup_tab)
+        canvas.bind("<KeyPress-ISO_Left_Tab>", lambda event: self._popup_tab(event, backwards=True))
+        canvas.bind("<Shift-KeyPress-Tab>", lambda event: self._popup_tab(event, backwards=True))
+        self._popup_configure = root.bind("<Configure>", self._popup_reposition, add="+")
+        self._place_popup()
+        self.popup.lift()
+
+    def _place_popup(self):
+        root = self._popup_owner
+        if self.popup is None or root is None:
+            return
+        scale = self.theme.scale
+        root_width, root_height = root.winfo_width() / scale, root.winfo_height() / scale
+        width = min(self._popup_width, root_width)
+        height = min(self._popup_height, root_height)
+        x = (self.winfo_rootx() - root.winfo_rootx()) / scale
+        y = (self.winfo_rooty() - root.winfo_rooty()) / scale + self.winfo_height()
+        if y + height > root_height:
+            y = (self.winfo_rooty() - root.winfo_rooty()) / scale - height
+        x = max(0, min(x, root_width - width))
+        y = max(0, min(y, root_height - height))
+        self.popup.place(x=x, y=y, width=width, height=height)
+
+    def _popup_reposition(self, event):
+        if event.widget is self._popup_owner:
+            self._place_popup()
+
+    def _activate_popup(self, event):
+        canvas = self._popup_canvas
+        if self.popup is None or event.widget is not canvas or not canvas.winfo_ismapped():
+            return
         canvas.grab_set()
-        canvas.focus_force()
+        canvas.focus_set()
+
+    def _popup_focus_out(self, event):
+        def check_focus():
+            canvas = self._popup_canvas
+            if canvas is not None and canvas.focus_displayof() is not canvas:
+                self._close_popup(restore_focus=False)
+        if not self._closed and self.popup is not None:
+            self.manager.call_later(0, check_focus, key=self.key + ":popup-focus")
+
+    def _popup_tab(self, event, backwards=False):
+        destination = self.tk_focusPrev() if backwards else self.tk_focusNext()
+        self._close_popup(restore_focus=False)
+        if destination is not None:
+            destination.focus_set()
+        return "break"
 
     def _paint_popup(self):
         if self.popup is None:
             return
         c, p = self._popup_canvas, self.theme.palette
+        c.position(self._popup_border, 1, 1, max(1, c.winfo_width() - 1), max(1, c.winfo_height() - 1))
         c.style(self._popup_border, outline=p.BORDER)
-        c.position(self._popup_mark, 4, self._choice * 32 + 8, 4, self._choice * 32 + 27)
+        c.position(self._popup_mark, 4, self._choice * self._row_height + 8,
+                   4, (self._choice + 1) * self._row_height - 5)
         c.style(self._popup_mark, fill=p.ACCENT)
         for index, (item, value) in enumerate(zip(self._popup_text, self.values)):
             c.style(item, text=self.labels.get(value, value).upper(), fill=p.ACCENT if index == self._choice else p.TEXT)
@@ -535,7 +588,7 @@ class InstrumentSelect(AnimatedButton):
         return "break"
 
     def _popup_hover(self, event):
-        row = int(event.y // 32)
+        row = int((event.y - 2) // self._row_height)
         if 0 <= row < len(self.values):
             self._choice = row
             self._paint_popup()
@@ -543,10 +596,12 @@ class InstrumentSelect(AnimatedButton):
     def _popup_click(self, event):
         if not 0 <= event.x < self._popup_canvas.winfo_width() or not 0 <= event.y < self._popup_canvas.winfo_height():
             return self._close_popup()
-        self._choice = min(len(self.values) - 1, max(0, int(event.y // 32)))
+        self._choice = min(len(self.values) - 1, max(0, int((event.y - 2) // self._row_height)))
         return self._choose()
 
     def _choose(self):
+        if self.popup is None:
+            return "break"
         value = self.values[self._choice]
         self._close_popup()
         self.variable.set(value)
@@ -557,10 +612,10 @@ class InstrumentSelect(AnimatedButton):
         if self.popup is not None:
             popup, canvas = self.popup, self._popup_canvas
             self.popup = self._popup_canvas = None
+            self.manager.cancel(self.key + ":popup-focus")
             if canvas is not None and canvas.winfo_exists() and canvas.grab_current() is canvas:
                 canvas.grab_release()
-            if getattr(popup.master, "_instrument_select", None) is self:
-                popup.master._instrument_select = None
+            self._release_popup_owner()
             popup.destroy()
             if restore_focus and not self._closed and self.winfo_exists() and self.winfo_ismapped():
                 self.focus_set()
@@ -568,9 +623,18 @@ class InstrumentSelect(AnimatedButton):
 
     def _popup_destroyed(self, event):
         if event.widget is self.popup:
-            if getattr(self.popup.master, "_instrument_select", None) is self:
-                self.popup.master._instrument_select = None
             self.popup = self._popup_canvas = None
+            self.manager.cancel(self.key + ":popup-focus")
+            self._release_popup_owner()
+
+    def _release_popup_owner(self):
+        owner, binding = self._popup_owner, self._popup_configure
+        self._popup_owner = self._popup_configure = None
+        if owner is not None:
+            if getattr(owner, "_instrument_select", None) is self:
+                owner._instrument_select = None
+            if binding is not None and owner.winfo_exists():
+                owner.unbind("<Configure>", binding)
 
     def _unmap(self, event):
         self._close_popup(restore_focus=False)
