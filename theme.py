@@ -7,6 +7,7 @@ from tkinter import font as tkfont
 import weakref
 
 from motion import lerp_color, ease_in_out_quad
+from layout import LayoutFrame, LayoutLabel, display_metrics
 
 
 THEMES = {
@@ -84,6 +85,31 @@ class StudioTheme:
         self.font = self.mono
         self._bindings = weakref.WeakKeyDictionary()
         self._views = weakref.WeakSet()
+        self._geometry = weakref.WeakSet()
+        self._fonts = {}
+        self.scale, self.screen_width, self.screen_height = display_metrics(root)
+
+    def px(self, value):
+        return round(value * self.scale)
+
+    def typeface(self, size, family=None, bold=False, italic=False):
+        key = (size, family or self.mono, bold, italic)
+        if key not in self._fonts:
+            self._fonts[key] = tkfont.Font(root=self.root, family=key[1], size=-max(1, self.px(size * 4 / 3)),
+                                           weight="bold" if bold else "normal", slant="italic" if italic else "roman")
+        return self._fonts[key]
+
+    def update_scale(self):
+        scale, self.screen_width, self.screen_height = display_metrics(self.root)
+        if abs(scale - self.scale) < .005:
+            return False
+        self.scale = scale
+        for (size, _, _, _), font in self._fonts.items():
+            font.configure(size=-max(1, self.px(size * 4 / 3)))
+        for widget in tuple(self._geometry):
+            if widget.winfo_exists():
+                widget._reflow()
+        return True
 
     def bind(self, widget, **roles):
         self._bindings.setdefault(widget, {}).update(roles)
@@ -125,9 +151,9 @@ class StudioTheme:
         return True
 
     def frame(self, parent, role="BG", **kwargs):
-        return self.bind(tk.Frame(parent, bd=0, relief="flat", **kwargs), bg=role)
+        return self.bind(LayoutFrame(parent, self, bd=0, relief="flat", **kwargs), bg=role)
 
     def label(self, parent, text="", size=9, role="TEXT", bg="BG", bold=False, **kwargs):
-        label = tk.Label(parent, text=text, font=(self.mono, size, "bold" if bold else "normal"),
+        label = LayoutLabel(parent, self, text=text, font=self.typeface(size, bold=bold),
                          bd=0, relief="flat", **kwargs)
         return self.bind(label, fg=role, bg=bg)
