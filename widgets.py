@@ -21,7 +21,7 @@ class AnimatedButton(RetainedCanvas):
         self._playback = "ready"
         self._surface = self.create_image(0, 0, anchor="nw")
         self._surface_image = None
-        self._label = self.create_text(0, 0, font=theme.typeface(10 if primary else 9, bold=primary))
+        self._label = self.create_text(0, 0, font=theme.typeface(11 if primary else 10, bold=primary))
         self._polygons = [self.create_polygon(0, 0, 0, 0, 0, 0, outline="", state="hidden") for _ in range(2)]
         self._lines = [self.create_line(0, 0, 0, 0, width=1.4, state="hidden") for _ in range(4)]
         self._arc = self.create_arc(0, 0, 0, 0, style="arc", width=1.4, start=40, extent=280, state="hidden")
@@ -434,7 +434,6 @@ class InstrumentEntry(LayoutEntry):
         self.theme, self.manager, self.reduced_motion = theme, manager, reduced_motion
         self.key = f"entry:{self}"
         self._focus_amount = 0.0
-        self._focused = False
         theme.bind(self, bg="INSET", fg="TEXT", insertbackground="ACCENT", disabledbackground="INSET",
                    disabledforeground="MUTED", selectbackground="BORDER", selectforeground="TEXT")
         theme.register(self)
@@ -444,7 +443,6 @@ class InstrumentEntry(LayoutEntry):
         self.refresh_theme()
 
     def _focus(self, value):
-        self._focused = value
         start = self._focus_amount
         def update(amount):
             self._focus_amount = start + (float(value) - start) * amount
@@ -474,13 +472,8 @@ class InstrumentSelect(AnimatedButton):
         self._trace = variable.trace_add("write", self._value_changed)
         self.bind("<KeyPress-Down>", self._open_key)
         self.bind("<KeyPress-Up>", self._open_key)
-        self.bind("<KeyRelease-space>", self._select_release)
-        self.bind("<KeyRelease-Return>", self._select_release)
         self.bind("<Unmap>", self._unmap)
         self._value_changed()
-
-    def _select_release(self, event):
-        return self._key_release(event)
 
     def _value_changed(self, *args):
         self._text = self.labels.get(self.variable.get(), self.variable.get())
@@ -510,7 +503,7 @@ class InstrumentSelect(AnimatedButton):
         self._popup_owner = root
         self.popup = self.theme.frame(root, role="INSET")
         self.popup.bind("<Destroy>", self._popup_destroyed)
-        self._popup_font = self.theme.typeface(9)
+        self._popup_font = self.theme.typeface(10)
         self._row_height = max(32, math.ceil(self._popup_font.metrics("linespace") / self.theme.scale) + 14)
         width = max(self._popup_font.measure(self.labels.get(value, value).upper()) for value in self.values) / self.theme.scale + 34
         self._popup_width = max(self.winfo_width(), 164, width)
