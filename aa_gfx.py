@@ -31,12 +31,10 @@ def _aa_rounded_sdf(x, y, cx, cy, hx, hy, radius):
 
 
 def render_box(w, h, radius, fill, border=None, border_w=1.0, fill_bottom=None,
-               corners=(True, True, True, True), shadow=0.0, shadow_dy=1.0, shadow_blur=2.0):
+               shadow=0.0, shadow_dy=1.0, shadow_blur=2.0):
     """Return PNG bytes; sizes are physical pixels, including any shadow padding."""
     if any(not isinstance(size, int) or isinstance(size, bool) or size < 1 for size in (w, h)):
         raise ValueError("Sprite dimensions must be positive integers.")
-    if len(corners) != 4:
-        raise ValueError("Provide four corner flags.")
     if border_w < 0 or not 0 <= shadow <= 1 or (shadow and shadow_blur <= 0):
         raise ValueError("Invalid border width or shadow parameters.")
     top, bottom = _aa_rgb(fill), _aa_rgb(fill_bottom or fill)
@@ -49,8 +47,6 @@ def render_box(w, h, radius, fill, border=None, border_w=1.0, fill_bottom=None,
             raise ValueError("Sprite dimensions must leave room for the shadow padding.")
         radius = max(0.0, radius - pad)
     radius = max(0.0, min(radius, hx, hy))
-    rounded = all(corners)
-    mirror = corners[0] == corners[1] and corners[3] == corners[2]
     margin = pad + radius + border_w + (shadow_blur + abs(shadow_dy) if shadow else 0) + 1
     side = min(w // 2, max(0, math.ceil(margin)))
     span = w - 2 * side
@@ -62,12 +58,7 @@ def render_box(w, h, radius, fill, border=None, border_w=1.0, fill_bottom=None,
 
         def pixel(px):
             x = px + 0.5
-            r = radius
-            if not rounded:
-                left, upper = x < cx, y < cy
-                index = 0 if left and upper else 1 if upper else 3 if left else 2
-                r = radius if corners[index] else 0.0
-            d = _aa_rounded_sdf(x, y, cx, cy, hx, hy, r)
+            d = _aa_rounded_sdf(x, y, cx, cy, hx, hy, radius)
             outer = _aa_clamp01(0.5 - d)
             inner = _aa_clamp01(0.5 - (d + border_w)) if edge else outer
             ring = outer - inner
@@ -75,7 +66,7 @@ def render_box(w, h, radius, fill, border=None, border_w=1.0, fill_bottom=None,
             if edge and outer > 0:
                 color = tuple((base[i] * inner + edge[i] * ring) / outer for i in range(3))
             if shadow:
-                distance = _aa_rounded_sdf(x, y - shadow_dy, cx, cy, hx, hy, r)
+                distance = _aa_rounded_sdf(x, y - shadow_dy, cx, cy, hx, hy, radius)
                 shaded = _aa_clamp01(0.5 - distance / shadow_blur) * shadow * (1 - alpha)
                 total = alpha + shaded
                 if total > 0:
@@ -85,28 +76,8 @@ def render_box(w, h, radius, fill, border=None, border_w=1.0, fill_bottom=None,
 
         left = [pixel(px) for px in range(side)]
         middle = pixel(side) * span if span else b""
-        right = reversed(left) if mirror else (pixel(px) for px in range(w - side, w))
-        rows.append(b"".join(left) + middle + b"".join(right))
+        rows.append(b"".join(left) + middle + b"".join(reversed(left)))
     return _aa_png(w, h, rows)
-
-
-def render_corner_mask(radius, color, corner="tl"):
-    """Paint outside a rounded corner in the background color, with an alpha edge."""
-    if corner not in ("tl", "tr", "bl", "br") or not math.isfinite(radius) or radius < 0:
-        raise ValueError("Use a nonnegative radius and tl, tr, bl, or br.")
-    size, rgb = max(1, math.ceil(radius)), _aa_rgb(color)
-    rows = []
-    for py in range(size):
-        row = bytearray()
-        for px in range(size):
-            x = px + 0.5 if corner in ("tl", "bl") else size - (px + 0.5)
-            y = py + 0.5 if corner in ("tl", "tr") else size - (py + 0.5)
-            inside = x < radius and y < radius
-            distance = math.hypot(radius - x, radius - y) - radius if inside else -1
-            alpha = _aa_clamp01(0.5 + distance) if inside else 0.0
-            row += bytes((*rgb, round(alpha * 255)))
-        rows.append(bytes(row))
-    return _aa_png(size, size, rows)
 
 
 class SpriteCache:
@@ -117,14 +88,12 @@ class SpriteCache:
             raise ValueError("Sprite cache limit must be a positive integer.")
         self.root, self.limit, self._images = root, limit, OrderedDict()
 
-    def get(self, kind, *args, **kwargs):
-        if "corners" in kwargs:
-            kwargs["corners"] = tuple(kwargs["corners"])
-        key = (kind, args, tuple(sorted(kwargs.items())))
+    def box(self, *args, **kwargs):
+        key = (args, tuple(sorted(kwargs.items())))
         image = self._images.get(key)
         if image is None:
             import tkinter as tk
-            data = {"box": render_box, "corner": render_corner_mask}[kind](*args, **kwargs)
+            data = render_box(*args, **kwargs)
             image = tk.PhotoImage(master=self.root, data=base64.b64encode(data))
             self._images[key] = image
             while len(self._images) > self.limit:
@@ -132,9 +101,3 @@ class SpriteCache:
         else:
             self._images.move_to_end(key)
         return image
-
-    def box(self, *args, **kwargs):
-        return self.get("box", *args, **kwargs)
-
-    def corner(self, *args, **kwargs):
-        return self.get("corner", *args, **kwargs)
