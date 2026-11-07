@@ -1,6 +1,5 @@
 """One clock for transitions, playback scheduling, and periodic UI updates."""
 
-import math
 import time
 from functools import lru_cache
 
@@ -23,25 +22,6 @@ def lerp_color(start, end, progress):
         for i in (1, 3, 5)))
 
 
-ease = ease_out_cubic
-blend = lerp_color
-
-
-def bar_poses(previous, current, progress, swap=()):
-    amount = ease_out_cubic(progress)
-    valid = len(swap) == 2 and len(previous) == len(current) and swap[0] != swap[1]
-    valid = valid and all(0 <= index < len(current) for index in swap)
-    poses = []
-    for index, value in enumerate(current):
-        if valid and index in swap:
-            source = swap[1] if index == swap[0] else swap[0]
-            poses.append((source + (index - source) * amount, float(value), math.sin(math.pi * amount)))
-        else:
-            before = previous[index] if len(previous) == len(current) else value
-            poses.append((float(index), before + (value - before) * amount, 0.0))
-    return poses
-
-
 class AnimationManager:
     def __init__(self, root):
         self.root = root
@@ -50,8 +30,7 @@ class AnimationManager:
         self._serial = 0
         self._closed = False
         self._ticking = False
-        self._last_tick = time.perf_counter()
-        self._last_animation = self._last_tick
+        self._last_animation = time.perf_counter()
         self._wake_at = None
         self.fps = 60.0
         self.frames = 0
@@ -127,7 +106,6 @@ class AnimationManager:
                 self.fps = self.fps * .85 + .15 / delta
         if animation_due:
             self._last_animation = now
-        self._last_tick = now
         self.frames += 1
         try:
             for key, job in tuple(self.jobs.items()):
