@@ -15,7 +15,6 @@ class ScopeScreen(RetainedCanvas):
         self.domain = (0, 1)
         self._bar_render_keys, self._bar_render_bounds = {}, {}
         self.step_number = 0
-        self.progress = 1.0
         self._running = False
         self._scan_present = False
         self._phase = 0.0
@@ -24,11 +23,11 @@ class ScopeScreen(RetainedCanvas):
         self._bounds = []
         self._grid = [self.create_line(0, 0, 0, 0) for _ in range(14)]
         self._ticks = [self.create_line(0, 0, 0, 0) for _ in range(8)]
-        self._axis = [self.create_text(0, 0, anchor="e", font=theme.typeface(7)) for _ in range(5)]
+        self._axis = [self.create_text(0, 0, anchor="e", font=theme.typeface(8)) for _ in range(5)]
         self._baseline = self.create_line(0, 0, 0, 0)
         self._sweep = [self.create_line(0, 0, 0, 0) for _ in range(3)]
-        self._readout = self.create_text(0, 0, anchor="ne", font=theme.typeface(7))
-        self._trace_label = self.create_text(0, 0, anchor="nw", text="S I G N A L   /   0 1", font=theme.typeface(7))
+        self._readout = self.create_text(0, 0, anchor="ne", font=theme.typeface(8))
+        self._trace_label = self.create_text(0, 0, anchor="nw", text="S I G N A L   /   0 1", font=theme.typeface(8))
         self.bars = []
         for index in range(64):
             self.bars.append(dict(
@@ -37,10 +36,10 @@ class ScopeScreen(RetainedCanvas):
                 bands=[self.create_rectangle(0, 0, 0, 0, outline="") for _ in range(8)],
                 edge=self.create_line(0, 0, 0, 0, width=1),
                 value=self.create_text(0, 0, font=theme.typeface(8)),
-                index=self.create_text(0, 0, font=theme.typeface(7)),
+                index=self.create_text(0, 0, font=theme.typeface(8)),
             ))
         self._tooltip_bg = self.create_rectangle(0, 0, 0, 0, state="hidden", tags="tooltip")
-        self._tooltip_text = self.create_text(0, 0, font=theme.typeface(8), state="hidden", tags="tooltip")
+        self._tooltip_text = self.create_text(0, 0, font=theme.typeface(9), state="hidden", tags="tooltip")
         self.bind("<Motion>", self._hover)
         self.bind("<Leave>", self._leave)
         self.bind("<Unmap>", lambda event: self.manager.cancel(self.key + ":scan"))
@@ -89,12 +88,11 @@ class ScopeScreen(RetainedCanvas):
         self._hover_index = None
         roles = self._roles(step)
         self.targets = {identity: (float(index), float(values[index]), roles[index],
-                                  float(roles[index] in ("COMPARE", "PIVOT")), values[index])
+                                  float(roles[index] in ("COMPARE", "PIVOT")))
                         for index, identity in enumerate(self.order)}
         starts = {identity: [row[0], row[1], row[2], row[3].copy(), row[4]] for identity, row in self.display.items()}
         swapped = set(self.order[i] for i in step.swap) if step.swap else set()
         def update(amount):
-            self.progress = amount
             for identity, target in self.targets.items():
                 start = starts[identity]
                 weights = {role: weight * (1 - amount) for role, weight in start[3].items()}
@@ -120,7 +118,6 @@ class ScopeScreen(RetainedCanvas):
     def settle(self, keep_positions=False):
         self.manager.cancel_prefix(self.key + ":")
         self._wave.clear()
-        self.progress = 1.0
         if not keep_positions:
             for identity, target in self.targets.items():
                 self.display[identity] = [target[0], target[1], 0, {target[2]: 1.0}, target[3]]
