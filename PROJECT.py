@@ -24,10 +24,8 @@ class Visualizer:
         self.reduced_motion = tk.BooleanVar(value=False)
         self._saved_theme = load_theme(THEME_LABELS)
         self.theme = StudioTheme(root, self.manager, self.reduced_motion, mode=self._saved_theme)
-        self.font = self.mono = self.theme.mono
         self.theme.bind(root, bg="BG")
         self.theme_var = tk.StringVar(value=self._saved_theme)
-        self._theme_id = None
         root.title("Algo Studio · Algorithm Visualizer")
         root.geometry(f"{min(self.theme.px(1280), self.theme.screen_width - self.theme.px(24))}x"
                       f"{min(self.theme.px(900), self.theme.screen_height - self.theme.px(48))}")
@@ -36,9 +34,6 @@ class Visualizer:
         self._closed = False
         self._guides = weakref.WeakSet()
         self._after_id = None
-        self._motion_id = None
-        self._motion_progress = self._finish_progress = 1.0
-        self._previous_step = None
         self._iterator = None
         self.state = "ready"
         self.comparisons = self.writes = self.steps = 0
@@ -64,21 +59,12 @@ class Visualizer:
         root.bind("<Control-r>", lambda event: self.reset())
         root.bind("<Right>", self._right)
         root.bind("<Configure>", self._resize)
-        self._theme_id = self.manager.call_later(2000, self._poll_theme)
+        self.manager.call_later(2000, self._poll_theme)
         self._launch_id = self.manager.call_later(80, self._launch)
 
     @property
     def palette(self):
         return self.theme.palette
-
-    @property
-    def _motion_progress(self):
-        return self.canvas.progress if hasattr(self, "canvas") else 1.0
-
-    @_motion_progress.setter
-    def _motion_progress(self, value):
-        if hasattr(self, "canvas"):
-            self.canvas.progress = value
 
     def _label(self, parent, text="", size=9, role="TEXT", bg="BG", **kwargs):
         return self.theme.label(parent, text, size, role, bg, **kwargs)
@@ -95,18 +81,16 @@ class Visualizer:
                 self._saved_theme = mode
 
     def _poll_theme(self):
-        self._theme_id = None
         if self._closed:
             return
         if self.theme_var.get() == "System":
             self.theme.select("System")
-        self._theme_id = self.manager.call_later(2000, self._poll_theme)
+        self.manager.call_later(2000, self._poll_theme)
 
     def _build_sidebar(self):
         rail = self.theme.frame(self.root, width=SPACING["sidebar"])
         rail.pack(side="left", fill="y")
         rail.pack_propagate(False)
-        self.sidebar = rail
         self.theme.frame(self.root, role="BORDER", width=1).pack(side="left", fill="y")
         brand = self.theme.frame(rail)
         brand.pack(fill="x", padx=22, pady=(29, 0))
@@ -114,7 +98,7 @@ class Visualizer:
         self._label(brand, "S T U D I O", 9, "MUTED").pack(anchor="w", pady=(3, 18))
         self.theme.frame(rail, role="BORDER", height=1).pack(fill="x", padx=22)
         self._label(rail, "I N S T R U M E N T  /  0 1", 7, "MUTED").pack(anchor="w", padx=22, pady=(14, 25))
-        self._label(rail, "A L G O R I T H M S", 8, "MUTED").pack(anchor="w", padx=22, pady=(0, 10))
+        self._label(rail, "A L G O R I T H M S", 9, "MUTED").pack(anchor="w", padx=22, pady=(0, 10))
         tabs = self.theme.frame(rail)
         tabs.pack(fill="x", padx=18)
         self.tab_buttons = {}
@@ -124,7 +108,6 @@ class Visualizer:
             self.tab_buttons[category] = button
         self.algorithm_list = Navigation(rail, self.theme, self.manager, self.reduced_motion, self._select_algorithm)
         self.algorithm_list.pack(fill="x", padx=16, pady=(13, 6))
-        self.nav_buttons = {}
         footer = self.theme.frame(rail)
         footer.pack(side="bottom", fill="x", padx=17, pady=18)
         self._label(footer, "O P E R A T I O N", 7, "MUTED").pack(anchor="w", padx=5)
@@ -164,7 +147,6 @@ class Visualizer:
     def _build_nav(self):
         names = [name for name, meta in ALGORITHMS.items() if meta.category == self.category]
         self.algorithm_list.set_names(names)
-        self.nav_buttons = {name: NavigationAction(self.algorithm_list, name) for name in names}
 
     def _refresh_nav(self):
         for category, button in self.tab_buttons.items():
@@ -174,7 +156,6 @@ class Visualizer:
     def _build_main(self):
         main = self.theme.frame(self.root)
         main.pack(side="left", fill="both", expand=True, padx=SPACING["outer"], pady=22)
-        self.main = main
         main.columnconfigure(0, weight=1)
         main.rowconfigure(3, weight=1)
         header = self.theme.frame(main)
@@ -188,34 +169,32 @@ class Visualizer:
         self.theme_box.bind("<<ComboboxSelected>>", self._change_theme)
         self.title = DisplayTitle(header, self.theme, self.manager, self.reduced_motion)
         self.title.pack(fill="x")
-        self._label(header, "Observe the structure. Follow the signal.", 9, "MUTED").pack(anchor="w")
+        self._label(header, "Observe the structure. Follow the signal.", 10, "MUTED").pack(anchor="w")
         info = self.theme.frame(main)
         info.grid(row=1, column=0, sticky="ew", pady=(0, 8))
-        self.algo_title = self._label(info, size=11, bold=True)
+        self.algo_title = self._label(info, size=12, bold=True)
         self.algo_title.pack(side="left")
-        self.complexity_label = self._label(info, size=8, role="MUTED")
+        self.complexity_label = self._label(info, size=9, role="MUTED")
         self.complexity_label.pack(side="left", padx=16)
         self.state_label = StatusLamp(info, self.theme, self.manager, self.reduced_motion)
         self.state_label.pack(side="right")
         self.meters = MeterRow(main, self.theme, self.manager, self.reduced_motion)
         self.meters.grid(row=2, column=0, sticky="ew", pady=(0, 18))
-        self.stat_labels = {key: MeterValue(self.meters, key) for key in self.meters.values}
         scope_frame = self.theme.frame(main, role="PANEL", highlightthickness=1)
         self.theme.bind(scope_frame, highlightbackground="BORDER")
         scope_frame.grid(row=3, column=0, sticky="nsew")
         scope_frame.columnconfigure(0, weight=1)
         scope_frame.rowconfigure(0, weight=1)
-        self.chart_card = scope_frame
         self.canvas = ScopeScreen(scope_frame, self.theme, self.manager, self.reduced_motion)
         self.canvas.grid(row=0, column=0, sticky="nsew", padx=5, pady=(5, 0))
         legend = self.theme.frame(scope_frame, role="INSET")
         legend.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
         for name, role in (("SIGNAL", "BAR"), ("COMPARE", "COMPARE"), ("PIVOT", "PIVOT"), ("SETTLED", "SETTLED")):
             self.theme.frame(legend, role=role, width=9, height=2).pack(side="left", padx=(14, 5), pady=10)
-            self._label(legend, name, 7, "MUTED", bg="INSET").pack(side="left")
-        self.array_count = self._label(legend, "", 7, "MUTED", bg="INSET")
+            self._label(legend, name, 8, "MUTED", bg="INSET").pack(side="left")
+        self.array_count = self._label(legend, "", 8, "MUTED", bg="INSET")
         self.array_count.pack(side="right", padx=12)
-        self.message = self._label(scope_frame, "", 9, "TEXT", bg="PANEL", anchor="w", justify="left", padx=14, pady=11, wraplength=700)
+        self.message = self._label(scope_frame, "", 10, "TEXT", bg="PANEL", anchor="w", justify="left", padx=14, pady=11, wraplength=700)
         self.message.grid(row=2, column=0, sticky="ew")
         self.message.bind("<Configure>", lambda event: self.message.configure(wraplength=max(100, event.width / self.theme.scale - 28)))
         controls = self.theme.frame(main)
@@ -230,7 +209,7 @@ class Visualizer:
         self.reset_button.pack(side="left", padx=(7, 0))
         speed = self.theme.frame(controls)
         speed.pack(side="right")
-        self.speed_label = self._label(speed, "", 7, "MUTED")
+        self.speed_label = self._label(speed, "", 8, "MUTED")
         self.speed_label.pack(anchor="e")
         self.speed_scale = InstrumentSlider(speed, self.theme, self.manager, self.speed_var, self._speed_changed, self.reduced_motion, length=175)
         self.speed_scale.pack()
@@ -240,11 +219,11 @@ class Visualizer:
         self.theme.frame(data, role="BORDER", height=1).pack(fill="x", pady=(0, 10))
         data_top = self.theme.frame(data)
         data_top.pack(fill="x", pady=(0, 10))
-        self._label(data_top, "I N P U T", 7, "MUTED").pack(side="left", padx=(0, 12))
+        self._label(data_top, "I N P U T", 8, "MUTED").pack(side="left", padx=(0, 12))
         self.preset_box = InstrumentSelect(data_top, self.theme, self.manager, self.reduced_motion,
                                            self.preset_var, ("Random", "Nearly sorted", "Reversed", "Few unique"), width=166)
         self.preset_box.pack(side="left")
-        self.size_label = self._label(data_top, "28 values", 8, "MUTED", width=9, anchor="w")
+        self.size_label = self._label(data_top, "28 values", 9, "MUTED", width=9, anchor="w")
         self.size_label.pack(side="left", padx=(12, 8))
         self.size_scale = InstrumentSlider(data_top, self.theme, self.manager, self.size_var, self._size_changed,
                                             self.reduced_motion, from_=8, to=64, length=94)
@@ -253,14 +232,14 @@ class Visualizer:
         self.shuffle_button.pack(side="right", padx=(10, 0))
         data_bottom = self.theme.frame(data)
         data_bottom.pack(fill="x")
-        self._label(data_bottom, "VALUES", 8, "MUTED").pack(side="left", padx=(0, 12))
+        self._label(data_bottom, "VALUES", 9, "MUTED").pack(side="left", padx=(0, 12))
         self.custom_entry = self._entry(data_bottom, self.custom_var)
         self.custom_entry.pack(side="left", fill="x", expand=True, ipady=7)
         self.custom_entry.bind("<Return>", lambda event: self.apply_custom())
         self.apply_button = self._button(data_bottom, "Apply", self.apply_custom, width=76, height=36)
         self.apply_button.pack(side="left", padx=(7, 0))
         self.target_box = self.theme.frame(data_bottom)
-        self._label(self.target_box, "TARGET", 8, "MUTED").pack(side="left", padx=(10, 7))
+        self._label(self.target_box, "TARGET", 9, "MUTED").pack(side="left", padx=(10, 7))
         self.target_entry = self._entry(self.target_box, self.target_var, width=5)
         self.target_entry.pack(side="left", ipady=7)
         self.target_entry.bind("<Return>", lambda event: self.toggle_run())
@@ -271,21 +250,20 @@ class Visualizer:
         learn.columnconfigure(1, weight=1, uniform="learn")
         about = self.theme.frame(learn)
         about.grid(row=0, column=0, sticky="nw", padx=(0, 20))
-        self._label(about, "M E T H O D  /  N O T E S", 7, "MUTED").pack(anchor="w", pady=(3, 4))
-        self.summary_label = self._label(about, "", 8, "MUTED", justify="left", wraplength=330)
+        self._label(about, "M E T H O D  /  N O T E S", 8, "MUTED").pack(anchor="w", pady=(3, 4))
+        self.summary_label = self._label(about, "", 9, "MUTED", justify="left", wraplength=330)
         self.summary_label.pack(anchor="w", pady=(6, 0))
-        self.space_label = self._label(about, "", 7, "MUTED", justify="left")
+        self.space_label = self._label(about, "", 8, "MUTED", justify="left")
         self.space_label.pack(anchor="w", pady=(6, 0))
         code = self.theme.frame(learn, role="INSET")
         code.grid(row=0, column=1, sticky="nsew")
         self.code_labels = []
         for index in range(6):
-            row = self._label(code, "", 8, "MUTED", bg="INSET", anchor="w", padx=9, pady=2)
+            row = self._label(code, "", 9, "MUTED", bg="INSET", anchor="w", padx=9, pady=2)
             row.pack(fill="x")
             self.code_labels.append(row)
         self.guide_button = self._button(header, "Guide", self.show_guide, "guide", width=96, height=26)
         self.guide_button.place(relx=1, rely=1, anchor="se")
-        self._bar_bounds = []
 
     def _entry(self, parent, variable, width=None):
         return InstrumentEntry(parent, self.theme, self.manager, self.reduced_motion,
@@ -323,13 +301,13 @@ class Visualizer:
         guide.transient(self.root)
         self.theme.bind(guide, bg="PANEL")
         self._label(guide, meta.name.upper(), 17, bg="PANEL").pack(anchor="w", padx=24, pady=(24, 12))
-        self._label(guide, meta.summary, 10, "MUTED", bg="PANEL", wraplength=555, justify="left").pack(anchor="w", padx=24)
+        self._label(guide, meta.summary, 11, "MUTED", bg="PANEL", wraplength=555, justify="left").pack(anchor="w", padx=24)
         self._label(guide, f"Average {meta.average} / Worst {meta.worst} / Space {meta.space}",
-                    9, "ACCENT", bg="PANEL").pack(anchor="w", padx=24, pady=16)
+                    10, "ACCENT", bg="PANEL").pack(anchor="w", padx=24, pady=16)
         for index, line in enumerate(meta.code, 1):
-            self._label(guide, f"{index:02}  {line}", 9, bg="PANEL", anchor="w").pack(fill="x", padx=24, pady=3)
+            self._label(guide, f"{index:02}  {line}", 10, bg="PANEL", anchor="w").pack(fill="x", padx=24, pady=3)
         self._label(guide, "Algorithm costs exclude visualization. Writes count main-array assignments.",
-                    8, "MUTED", bg="PANEL", wraplength=540).pack(anchor="w", padx=24, pady=16)
+                    9, "MUTED", bg="PANEL", wraplength=540).pack(anchor="w", padx=24, pady=16)
         guide.bind("<Escape>", lambda event: guide.destroy())
 
     def _set_category(self, category):
@@ -448,7 +426,7 @@ class Visualizer:
         self.state = "paused"
         self._sync_controls()
         self._update_stats()
-        self._draw()
+        self.canvas.paint()
 
     def step_once(self):
         if self.state == "running":
@@ -538,24 +516,12 @@ class Visualizer:
         reset = self.steps == 0 or self.state == "stopped"
         self.canvas.set_step(self.current, self.steps, duration=max(.07, min(.35, self.interval * .0015)),
                              animate=animate_from is not None, reset=reset)
-        self._bar_bounds = self.canvas._bounds
-        self._motion_id = self.canvas.key + ":move" if animate_from is not None and not self.reduced_motion.get() else None
         if finish:
-            self._finish_progress = 0
             self.canvas.complete(self._completion_done)
 
     def _completion_done(self):
         self._completing = False
-        self._finish_progress = 1
-        self._motion_id = None
         self._sync_controls()
-
-    def _draw(self, event=None):
-        self.canvas.paint()
-        self._bar_bounds = self.canvas._bounds
-
-    def _hover(self, event):
-        self.canvas._hover(event)
 
     def _stop_motion(self):
         if hasattr(self, "canvas"):
@@ -569,8 +535,6 @@ class Visualizer:
             self.manager.cancel(self._launch_id)
             self._launch_id = None
         self._completing = False
-        self._motion_id = None
-        self._motion_progress = self._finish_progress = 1.0
 
     def _launch(self):
         self._launch_id = None
@@ -605,28 +569,7 @@ class Visualizer:
         self._cancel()
         self._closed = True
         self.manager.close()
-        self._theme_id = None
         self.root.destroy()
-
-
-class NavigationAction:
-    def __init__(self, navigation, name):
-        self.navigation, self.name = navigation, name
-
-    def invoke(self):
-        self.navigation.command(self.name)
-
-    def __getattr__(self, key):
-        return getattr(self.navigation, key)
-
-
-class MeterValue:
-    def __init__(self, row, key):
-        self.row, self.key = row, key
-
-    def cget(self, option):
-        value = self.row.targets[self.key]
-        return f"{value:.1f}s" if self.key == "elapsed" else str(round(value))
 
 
 def main():
