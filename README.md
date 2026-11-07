@@ -30,7 +30,7 @@ Turn “wait, how does that work?” into “ohhh, I get it.”
 
 Stopping a run restores the original array. Negative integers, zeros, and duplicate values are supported.
 
-> **[v3.0.0 · Hotfix #2](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v3.0.0)** — the five-palette console, with sharper controls and a theme that remembers you. [Short changelog →](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v3.0.0)
+> **[v3.0.0 · Hotfix #3](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v3.0.0)** — the five-palette console, with sharper controls and a theme that remembers you. [Short changelog →](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/releases/tag/v3.0.0)
 
 <details>
 <summary><strong>🌓 Appearance and accessibility</strong></summary>
@@ -61,7 +61,7 @@ The footer links back to the project through **Made by Radsharkboy**. The Run bu
 
 Requires **Python 3.10+**, **Tkinter**, and a graphical desktop. No pip dependencies are required.
 
-**Download [Algo-Studio-v3.0.0-hotfix.2.py](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0-hotfix.2/builds/Algo-Studio-v3.0.0-hotfix.2.py)** and run `py Algo-Studio-v3.0.0-hotfix.2.py` on Windows or `python3 Algo-Studio-v3.0.0-hotfix.2.py` on macOS/Linux. The single file includes the whole app. A [portable ZIP](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0-hotfix.2/builds/Algo-Studio-v3.0.0-hotfix.2.zip) is also available; extract it before running. [SHA-256 checksums](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0-hotfix.2/builds/SHA256SUMS) are provided with the release.
+**Download [Algo-Studio-v3.0.0-hotfix.3.py](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0-hotfix.3/builds/Algo-Studio-v3.0.0-hotfix.3.py)** and run `py Algo-Studio-v3.0.0-hotfix.3.py` on Windows or `python3 Algo-Studio-v3.0.0-hotfix.3.py` on macOS/Linux. The single file includes the whole app. A [portable ZIP](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0-hotfix.3/builds/Algo-Studio-v3.0.0-hotfix.3.zip) is also available; extract it before running. [SHA-256 checksums](https://github.com/Rad-Sharkboy/Algorithm-Visualizer/raw/refs/tags/v3.0.0-hotfix.3/builds/SHA256SUMS) are provided with the release.
 
 Or run the source checkout:
 
@@ -237,7 +237,7 @@ One Tk event-loop clock schedules playback and visual transitions. Canvas items 
 
 Pausing freezes a moving swap; resuming continues from its displayed position. Single-step places each value at its exact snapshot position while colors settle. Very fast playback retargets visual transitions without dropping algorithm steps. Reduced motion replaces movement and the completion wave with brief color fades.
 
-Build the standalone file with `python3 tools/build_release.py --version 3.0.0-hotfix.2`.
+Build the standalone file with `python3 tools/build_release.py --version 3.0.0-hotfix.3`.
 
 The layout uses a **1000 × 740** logical minimum, scaling fonts, controls, and pointer coordinates together for the display DPI and available screen space. On shorter windows, inline notes are hidden; **Algorithm guide** stays available. Importing the modules does not launch the app.
 
