@@ -2,7 +2,6 @@
 
 from types import SimpleNamespace
 import sys
-import tkinter as tk
 from tkinter import font as tkfont
 import weakref
 
@@ -79,13 +78,11 @@ def configure_fonts(root):
 class StudioTheme:
     def __init__(self, root, manager, reduced_motion, mode="System"):
         self.root, self.manager, self.reduced_motion = root, manager, reduced_motion
-        self.mode = mode
         self.name = system_theme() if mode == "System" else mode
         self.palette = SimpleNamespace(**THEMES[self.name])
         self.control_palette = self.palette
         self.sprites = SpriteCache(root, limit=192)
         self.display, self.mono = configure_fonts(root)
-        self.font = self.mono
         self._bindings = weakref.WeakKeyDictionary()
         self._views = weakref.WeakSet()
         self._geometry = weakref.WeakSet()
@@ -136,7 +133,6 @@ class StudioTheme:
     def select(self, mode):
         if mode != "System" and mode not in THEMES:
             raise ValueError(f"Unknown theme: {mode}")
-        self.mode = mode
         target = system_theme() if mode == "System" else mode
         if target == self.name:
             return False
